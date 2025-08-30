@@ -84,41 +84,60 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Background: #121212 */
+    --background: 0 0% 7%;
+    --foreground: 0 0% 100%; /* White #FFFFFF */
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    /* Card/Panel backgrounds: #262626 */
+    --card: 0 0% 15%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 18%;
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 0%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 0 0% 18%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    /* Text secondary: Light gray #A0A0A0 */
+    --muted: 0 0% 18%;
+    --muted-foreground: 0 0% 63%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 0 0% 18%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    /* Borders/Dividers: Medium gray #404040 */
+    --border: 0 0% 25%;
+    --input: 0 0% 18%;
+    --ring: 217 91% 60%;
+
+    /* Sidebar colors */
+    --sidebar-background: 0 0% 10%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 0 0% 18%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 25%;
+    --sidebar-ring: 217 91% 60%;
+
+    /* Crypto-specific Design Tokens for Dark Mode */
+    --percentage-button: 0 0% 18%;
+    --percentage-button-foreground: 0 0% 100%;
+    --percentage-button-hover: 0 0% 22%;
+    
+    --token-selector: 0 0% 18%;
+    --token-selector-border: 0 0% 25%;
+    --token-selector-hover: 0 0% 22%;
+    
+    --transaction-detail: 0 0% 63%;
+    --gas-fee: 0 0% 63%;
+    --positive-change: 142 76% 36%;
   }
 }
 
@@ -135,15 +154,17 @@
 @layer components {
   /* Crypto Interface Components */
   .crypto-card {
-    @apply bg-card border border-border rounded-xl shadow-sm;
+    @apply bg-card rounded-xl shadow-sm;
   }
   
   .token-input {
-    @apply bg-transparent text-2xl font-medium placeholder:text-muted-foreground border-none outline-none w-full;
+    @apply text-2xl font-medium placeholder:text-muted-foreground border-none outline-none w-full px-3 py-2 rounded-lg;
+    background-color: #1C1C1C;
   }
   
   .token-selector {
-    @apply flex items-center gap-2 px-3 py-2 bg-token-selector border border-token-selector-border rounded-lg hover:bg-token-selector-hover transition-colors cursor-pointer;
+    @apply flex items-center gap-2 px-3 py-2 bg-token-selector rounded-lg hover:bg-token-selector-hover transition-colors cursor-pointer;
+    min-height: 3rem;
   }
   
   .percentage-button {
@@ -151,7 +172,9 @@
   }
   
   .swap-button {
-    @apply w-full bg-primary text-primary-foreground hover:bg-primary-hover font-medium py-4 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply w-full bg-primary text-primary-foreground hover:bg-primary-hover font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm;
+    padding: 1rem 1rem !important;
+    height: auto !important;
   }
   
   .transaction-detail {
