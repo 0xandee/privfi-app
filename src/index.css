@@ -2,41 +2,69 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Crypto Swap Interface Design System */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    /* Base Colors */
+    --background: 0 0% 98%;
     --foreground: 222.2 84% 4.9%;
+    --surface: 0 0% 100%;
 
+    /* Card System */
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
+    --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 
+    /* Interactive Elements */
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary Blue Theme */
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 217 91% 55%;
 
-    --secondary: 210 40% 96.1%;
+    /* Secondary Elements */
+    --secondary: 210 40% 96%;
     --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary-hover: 210 40% 92%;
 
-    --muted: 210 40% 96.1%;
+    /* Muted Elements */
+    --muted: 210 40% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 96.1%;
+    /* Accent Colors */
+    --accent: 210 40% 96%;
     --accent-foreground: 222.2 47.4% 11.2%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
 
+    /* System Colors */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
+    /* Input & Border System */
     --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --input: 220 13% 91%;
+    --input-hover: 220 13% 88%;
+    --ring: 217 91% 60%;
 
-    --radius: 0.5rem;
+    /* Crypto-specific Design Tokens */
+    --percentage-button: 210 40% 96%;
+    --percentage-button-foreground: 222.2 47.4% 11.2%;
+    --percentage-button-hover: 210 40% 92%;
+    
+    --token-selector: 0 0% 100%;
+    --token-selector-border: 214.3 31.8% 91.4%;
+    --token-selector-hover: 210 40% 98%;
+    
+    --transaction-detail: 215.4 16.3% 46.9%;
+    --gas-fee: 215.4 16.3% 46.9%;
+    --positive-change: 142 76% 36%;
+
+    --radius: 0.75rem;
+    --radius-sm: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -101,5 +129,40 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /* Crypto Interface Components */
+  .crypto-card {
+    @apply bg-card border border-border rounded-xl shadow-sm;
+  }
+  
+  .token-input {
+    @apply bg-transparent text-2xl font-medium placeholder:text-muted-foreground border-none outline-none w-full;
+  }
+  
+  .token-selector {
+    @apply flex items-center gap-2 px-3 py-2 bg-token-selector border border-token-selector-border rounded-lg hover:bg-token-selector-hover transition-colors cursor-pointer;
+  }
+  
+  .percentage-button {
+    @apply px-3 py-1.5 bg-percentage-button text-percentage-button-foreground rounded-md hover:bg-percentage-button-hover transition-colors cursor-pointer text-sm font-medium;
+  }
+  
+  .swap-button {
+    @apply w-full bg-primary text-primary-foreground hover:bg-primary-hover font-medium py-4 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .transaction-detail {
+    @apply flex justify-between items-center text-sm;
+  }
+  
+  .transaction-detail-label {
+    @apply text-transaction-detail;
+  }
+  
+  .transaction-detail-value {
+    @apply text-foreground font-medium;
   }
 }
