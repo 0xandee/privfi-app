@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Settings, ArrowUpDown, ChevronDown } from 'lucide-react';
+import { Settings, ArrowUpDown, ChevronDown, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useWallet } from '@/contexts/WalletContext';
 import ethLogo from '@/assets/eth-logo.png';
 import strkLogo from '@/assets/strk-logo.png';
 
@@ -8,20 +9,21 @@ const SwapInterface = () => {
   const [activeTab, setActiveTab] = useState('swap');
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
+  const { isConnected, isConnecting, address, balance, error, connectWallet, disconnectWallet } = useWallet();
 
   const percentageButtons = [25, 50, 75, 100];
 
   const handlePercentageClick = (percentage: number) => {
     // Calculate percentage of balance
-    const balance = 0.0000;
-    const amount = (balance * percentage) / 100;
+    const balanceNum = parseFloat(balance);
+    const amount = (balanceNum * percentage) / 100;
     setFromAmount(amount.toFixed(6));
   };
 
   return (
     <div className="min-h-screen bg-background p-4 flex flex-col items-center justify-center">
       {/* Header */}
-      {/* <div className="crypto-card p-4 mb-4">
+      {/* <div className="crypto-card p-4 mb-4 w-full max-w-lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
@@ -37,31 +39,63 @@ const SwapInterface = () => {
               className="px-4 py-2 rounded-lg font-medium text-muted-foreground opacity-50 cursor-not-allowed"
               disabled
             >
-              DCA
+              DCA <span className="text-xs ml-1">(Coming Soon)</span>
             </button>
             <button
               className="px-4 py-2 rounded-lg font-medium text-muted-foreground opacity-50 cursor-not-allowed"
               disabled
             >
-              Bridge
+              Bridge <span className="text-xs ml-1">(Coming Soon)</span>
             </button>
           </div>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+          <div className="flex items-center gap-2">
+            <Button
+              variant={isConnected ? "outline" : "default"}
+              size="sm"
+              onClick={isConnected ? disconnectWallet : connectWallet}
+              disabled={isConnecting}
+              className="flex items-center gap-2"
+            >
+              <Wallet className="h-4 w-4" />
+              {isConnecting ? 'Connecting...' : isConnected ? `${address?.slice(0, 6)}...${address?.slice(-4)}` : 'Connect Wallet'}
+            </Button>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
               <Settings className="h-4 w-4" />
             </Button>
+          </div>
         </div>
       </div> */}
 
 
       <div className="w-full max-w-lg bg-[#1C1C1C] rounded-xl p-6">
-
+        <div className="flex items-center justify-end gap-2 mb-6">
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+            <Settings className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={isConnected ? "outline" : "default"}
+            size="sm"
+            onClick={isConnected ? disconnectWallet : connectWallet}
+            disabled={isConnecting}
+            className="flex items-center gap-2"
+          >
+            <Wallet className="h-4 w-4" />
+            {isConnecting ? 'Connecting...' : isConnected ? `${address?.slice(0, 6)}...${address?.slice(-4)}` : 'Connect Wallet'}
+          </Button>
+        </div>
+        {/* Error Display */}
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 mb-4">
+            <p className="text-sm text-destructive">{error}</p>
+          </div>
+        )}
         {/* Main Swap Card */}
         <div className="crypto-card px-4 py-6 space-y-4">
           {/* From Token Section */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">From</span>
-              <span className="text-sm text-muted-foreground">Balance: 0.0000</span>
+              <span className="text-sm text-muted-foreground">Balance: {balance}</span>
             </div>
 
             <div className="space-y-3">
@@ -110,7 +144,7 @@ const SwapInterface = () => {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">To</span>
-              <span className="text-sm text-muted-foreground">Balance: 0.0000</span>
+              <span className="text-sm text-muted-foreground">Balance: {balance}</span>
             </div>
 
             <div className="space-y-3">
@@ -166,11 +200,6 @@ const SwapInterface = () => {
           <Button className="swap-button">
             Swap
           </Button>
-
-          {/* Gas Fee */}
-          {/* <div className="text-center text-sm text-gas-fee">
-            Gas fee: $0.00 or 0.0000017 ETH
-          </div> */}
         </div>
       </div>
     </div>
