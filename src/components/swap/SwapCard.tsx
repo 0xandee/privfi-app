@@ -61,7 +61,7 @@ export const SwapCard: React.FC<SwapCardProps> = ({
       </div>
 
       {/* Transaction Details */}
-      <TransactionDetails />
+      {/* <TransactionDetails /> */}
 
       {/* Swap Button */}
       <div className="mt-6 space-y-3">

@@ -18,9 +18,6 @@ const SwapInterface = () => {
     <div className="min-h-screen bg-background p-4 flex flex-col items-center justify-center">
       <div className="w-full max-w-lg bg-[#1C1C1C] rounded-xl p-6">
         <div className="flex items-center justify-end gap-2 mb-6">
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-            <Settings className="h-4 w-4" />
-          </Button>
           <WalletConnectionButton
             isConnected={walletConnection.isConnected}
             isConnecting={walletConnection.isConnecting}
@@ -42,7 +39,7 @@ const SwapInterface = () => {
             <p className="text-sm text-destructive">{walletConnection.connectError.message}</p>
           </div>
         )} */}
-        
+
         {/* Main Swap Card */}
         <SwapCard
           fromAmount={swapForm.fromAmount}
