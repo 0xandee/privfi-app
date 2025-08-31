@@ -14,21 +14,24 @@ const SwapInterface = () => {
   return (
     <div className="min-h-screen bg-background p-4 flex flex-col items-center justify-center">
       <div className="w-full max-w-lg bg-[#1C1C1C] rounded-xl p-6">
-        <div className="flex items-center justify-end gap-2 mb-6">
-          <WalletConnectionButton
-            isConnected={walletConnection.isConnected}
-            isConnecting={walletConnection.isConnecting}
-            address={walletConnection.address}
-            onConnect={() => walletConnection.setShowWalletModal(true)}
-            onDisconnect={walletConnection.handleDisconnect}
-          />
-          <WalletModal
-            isOpen={walletConnection.showWalletModal}
-            onOpenChange={walletConnection.setShowWalletModal}
-            connectors={walletConnection.connectors}
-            onConnectWithConnector={walletConnection.handleConnectWithConnector}
-            onConnectFallback={walletConnection.handleConnectFallback}
-          />
+        <div className="flex items-center justify-between mb-6">
+          <span className="text-lg font-medium text-white">Privacy Swap</span>
+          <div className="flex items-center">
+            <WalletConnectionButton
+              isConnected={walletConnection.isConnected}
+              isConnecting={walletConnection.isConnecting}
+              address={walletConnection.address}
+              onConnect={() => walletConnection.setShowWalletModal(true)}
+              onDisconnect={walletConnection.handleDisconnect}
+            />
+            <WalletModal
+              isOpen={walletConnection.showWalletModal}
+              onOpenChange={walletConnection.setShowWalletModal}
+              connectors={walletConnection.connectors}
+              onConnectWithConnector={walletConnection.handleConnectWithConnector}
+              onConnectFallback={walletConnection.handleConnectFallback}
+            />
+          </div>
         </div>
         {/* Error Display */}
         {/* {walletConnection.connectError && (

@@ -5,6 +5,7 @@ import { TransactionDetails } from './TransactionDetails';
 import { Button } from '../ui/button';
 import { Token } from '@/constants/tokens';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
+import { useTokenPrices } from '@/hooks/useTokenPrices';
 import { ErrorMessage } from '@/components/ui/error-message';
 
 interface SwapCardProps {
@@ -42,6 +43,10 @@ export const SwapCard: React.FC<SwapCardProps> = ({
   const fromTokenBalance = useTokenBalance(fromToken, walletAddress);
   const toTokenBalance = useTokenBalance(toToken, walletAddress);
 
+  // Batch fetch prices for both tokens to optimize API calls
+  const { data: tokenPrices } = useTokenPrices([fromToken.address, toToken.address]);
+  
+
 
   return (
     <div>
@@ -54,7 +59,7 @@ export const SwapCard: React.FC<SwapCardProps> = ({
           balance={fromTokenBalance.balance}
           isLoadingBalance={fromTokenBalance.isLoading}
           selectedToken={fromToken}
-          excludeToken={toToken}
+          priceData={tokenPrices}
           onAmountChange={onFromAmountChange}
           onTokenChange={onFromTokenChange}
           showPercentageButtons={true}
@@ -80,7 +85,9 @@ export const SwapCard: React.FC<SwapCardProps> = ({
           balance={toTokenBalance.balance}
           isLoadingBalance={toTokenBalance.isLoading}
           selectedToken={toToken}
-          excludeToken={fromToken}
+          priceData={tokenPrices}
+          disableBalanceValidation={true}
+          readOnly={true}
           onAmountChange={onToAmountChange}
           onTokenChange={onToTokenChange}
         />

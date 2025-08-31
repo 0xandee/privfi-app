@@ -163,7 +163,7 @@
   }
   
   .token-input:focus {
-    @apply ring-2 ring-blue-500/20;
+    /* @apply ring-2 ring-blue-500/20; */
   }
   
   .token-selector {
@@ -172,7 +172,7 @@
   }
   
   .percentage-button {
-    @apply px-3 py-1.5 bg-percentage-button text-percentage-button-foreground rounded-md hover:bg-percentage-button-hover transition-colors cursor-pointer text-sm font-medium;
+    @apply px-3 py-1.5 bg-percentage-button text-muted-foreground rounded-md hover:bg-percentage-button-hover transition-colors cursor-pointer text-sm font-medium;
   }
   
   .swap-button {

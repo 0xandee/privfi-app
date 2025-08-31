@@ -5,13 +5,11 @@ import { STARKNET_TOKENS, DEFAULT_TOKENS, Token } from '@/constants/tokens';
 interface TokenSelectorProps {
   selectedToken: Token;
   onTokenChange: (token: Token) => void;
-  excludeToken?: Token; // Token to exclude from the selector
 }
 
 export const TokenSelector: React.FC<TokenSelectorProps> = ({
   selectedToken,
   onTokenChange,
-  excludeToken,
 }) => {
   const handleValueChange = (tokenSymbol: string) => {
     const token = STARKNET_TOKENS[tokenSymbol];
@@ -22,25 +20,32 @@ export const TokenSelector: React.FC<TokenSelectorProps> = ({
 
   return (
     <Select value={selectedToken.symbol} onValueChange={handleValueChange}>
-      <SelectTrigger className="token-selector w-[5.5rem] border-0 focus:ring-0 shadow-none !bg-token-selector">
-        <span className="font-medium">{selectedToken.symbol}</span>
+      <SelectTrigger className="token-selector w-[6.5rem] border-0 focus:ring-0 shadow-none !bg-token-selector">
+        <div className="flex items-center gap-2">
+          {selectedToken.logoURI && (
+            <img 
+              src={selectedToken.logoURI} 
+              alt={selectedToken.symbol} 
+              className="w-4 h-4 rounded-full"
+            />
+          )}
+          <span className="font-medium">{selectedToken.symbol}</span>
+        </div>
       </SelectTrigger>
-      <SelectContent className="min-w-[200px]">
-        {DEFAULT_TOKENS
-          .filter((tokenSymbol) => {
-            // Filter out the excluded token if provided
-            if (excludeToken) {
-              return tokenSymbol !== excludeToken.symbol;
-            }
-            return true;
-          })
-          .map((tokenSymbol) => {
+      <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
+        {DEFAULT_TOKENS.map((tokenSymbol) => {
             const token = STARKNET_TOKENS[tokenSymbol];
             return (
-              <SelectItem key={token.symbol} value={token.symbol} className="cursor-pointer">
-                <div className="flex items-center justify-between w-full">
+              <SelectItem key={token.symbol} value={token.symbol} className="cursor-pointer [&>span:first-child]:hidden pl-3">
+                <div className="flex items-center gap-2 w-full">
+                  {token.logoURI && (
+                    <img 
+                      src={token.logoURI} 
+                      alt={token.symbol} 
+                      className="w-4 h-4 rounded-full"
+                    />
+                  )}
                   <span className="font-medium">{token.symbol}</span>
-                  <span className="text-sm text-muted-foreground ml-2">{token.name}</span>
                 </div>
               </SelectItem>
             );

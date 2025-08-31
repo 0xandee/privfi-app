@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { TokenSelector } from './TokenSelector';
 import { Token } from '@/constants/tokens';
 import { useInputValidation } from '@/hooks/useInputValidation';
+import { useTokenPrice, TokenPrice } from '@/hooks/useTokenPrices';
+import { getTokenUSDDisplay } from '@/lib/priceUtils';
 import { ErrorMessage } from '@/components/ui/error-message';
 
 interface TokenInputProps {
@@ -10,9 +12,10 @@ interface TokenInputProps {
   balance: string;
   isLoadingBalance?: boolean;
   selectedToken: Token;
-  excludeToken?: Token;
   placeholder?: string;
-  usdValue?: string;
+  priceData?: { [address: string]: TokenPrice };
+  disableBalanceValidation?: boolean;
+  readOnly?: boolean;
   onAmountChange: (value: string) => void;
   onTokenChange: (token: Token) => void;
   showPercentageButtons?: boolean;
@@ -26,17 +29,37 @@ export const TokenInput: React.FC<TokenInputProps> = ({
   balance,
   isLoadingBalance = false,
   selectedToken,
-  excludeToken,
   placeholder = "0.0",
-  usdValue = "~$0.00",
+  priceData,
+  disableBalanceValidation = false,
+  readOnly = false,
   onAmountChange,
   onTokenChange,
   showPercentageButtons = false,
   percentageButtons = [],
   onPercentageClick,
 }) => {
-  const validation = useInputValidation(amount, selectedToken, balance);
+  const validation = useInputValidation(
+    amount, 
+    selectedToken, 
+    disableBalanceValidation ? undefined : balance
+  );
   const [activePercentage, setActivePercentage] = useState<number | null>(null);
+  
+  // Use pre-fetched price data if available, otherwise fetch individually
+  const shouldSkipIndividualFetch = priceData && priceData[selectedToken.address.toLowerCase()];
+  const { price: fetchedPrice, isLoading: isPriceLoading } = useTokenPrice(
+    shouldSkipIndividualFetch ? '' : selectedToken.address
+  );
+  
+  const price = priceData?.[selectedToken.address.toLowerCase()]?.priceInUSD || fetchedPrice;
+  const isLoading = shouldSkipIndividualFetch ? false : isPriceLoading;
+
+
+  // Calculate USD value display
+  const usdValue = validation.value && price > 0 
+    ? getTokenUSDDisplay(validation.value, price, selectedToken.decimals)
+    : "~$0.00";
 
   // Update parent component when validated value changes
   useEffect(() => {
@@ -89,16 +112,19 @@ export const TokenInput: React.FC<TokenInputProps> = ({
           <input
             type="text"
             value={validation.value}
-            onChange={handleInputChange}
-            onBlur={validation.handleBlur}
-            className={`token-input flex-1 ${validation.displayError ? 'border border-red-400/50 bg-red-400/5' : ''
-              }`}
+            onChange={readOnly ? undefined : handleInputChange}
+            onBlur={readOnly ? undefined : validation.handleBlur}
+            readOnly={readOnly}
+            className={`token-input flex-1 ${
+              validation.displayError ? 'border border-red-400/50 bg-red-400/5' : ''
+            } ${
+              readOnly ? 'cursor-default' : ''
+            }`}
             placeholder={placeholder}
           />
           <TokenSelector
             selectedToken={selectedToken}
             onTokenChange={onTokenChange}
-            excludeToken={excludeToken}
           />
         </div>
 
@@ -108,8 +134,10 @@ export const TokenInput: React.FC<TokenInputProps> = ({
         )}
 
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">{usdValue}</span>
-          {showPercentageButtons && (
+          <span className="text-sm text-muted-foreground">
+            {isLoading ? "Loading..." : usdValue}
+          </span>
+          {showPercentageButtons && !readOnly && (
             <div className="flex gap-2">
               {percentageButtons.map((percentage) => (
                 <button
