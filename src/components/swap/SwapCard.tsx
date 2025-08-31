@@ -3,14 +3,19 @@ import { ArrowUpDown } from 'lucide-react';
 import { TokenInput } from './TokenInput';
 import { TransactionDetails } from './TransactionDetails';
 import { Button } from '../ui/button';
+import { Token } from '@/constants/tokens';
 
 interface SwapCardProps {
   fromAmount: string;
   toAmount: string;
   balance: string;
   percentageButtons: number[];
+  fromToken: Token;
+  toToken: Token;
   onFromAmountChange: (value: string) => void;
   onToAmountChange: (value: string) => void;
+  onFromTokenChange: (token: Token) => void;
+  onToTokenChange: (token: Token) => void;
   onPercentageClick: (percentage: number) => void;
   onSwap: () => void;
 }
@@ -20,8 +25,12 @@ export const SwapCard: React.FC<SwapCardProps> = ({
   toAmount,
   balance,
   percentageButtons,
+  fromToken,
+  toToken,
   onFromAmountChange,
   onToAmountChange,
+  onFromTokenChange,
+  onToTokenChange,
   onPercentageClick,
   onSwap,
 }) => {
@@ -34,8 +43,9 @@ export const SwapCard: React.FC<SwapCardProps> = ({
           label="From"
           amount={fromAmount}
           balance={balance}
-          tokenSymbol="ETH"
+          selectedToken={fromToken}
           onAmountChange={onFromAmountChange}
+          onTokenChange={onFromTokenChange}
           showPercentageButtons={true}
           percentageButtons={percentageButtons}
           onPercentageClick={onPercentageClick}
@@ -55,8 +65,9 @@ export const SwapCard: React.FC<SwapCardProps> = ({
           label="To"
           amount={toAmount}
           balance={balance}
-          tokenSymbol="STRK"
+          selectedToken={toToken}
           onAmountChange={onToAmountChange}
+          onTokenChange={onToTokenChange}
         />
       </div>
 

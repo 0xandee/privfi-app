@@ -131,9 +131,9 @@
     --percentage-button-foreground: 0 0% 100%;
     --percentage-button-hover: 0 0% 22%;
     
-    --token-selector: 0 0% 18%;
+    --token-selector: 0 0% 11%;
     --token-selector-border: 0 0% 25%;
-    --token-selector-hover: 0 0% 22%;
+    --token-selector-hover: 0 0% 15%;
     
     --transaction-detail: 0 0% 63%;
     --gas-fee: 0 0% 63%;

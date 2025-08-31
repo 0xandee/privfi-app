@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wallet } from 'lucide-react';
+import { Wallet, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface WalletConnectionButtonProps {
@@ -23,17 +23,33 @@ export const WalletConnectionButton: React.FC<WalletConnectionButtonProps> = ({
 
   return (
     <Button
-      variant={isConnected ? "outline" : "default"}
+      variant={isConnected ? "secondary" : "default"}
       size="sm"
       onClick={isConnected ? onDisconnect : onConnect}
       disabled={isConnecting}
-      className="flex items-center gap-2"
+      className="flex items-center gap-2 group"
     >
-      <Wallet className="h-4 w-4" />
+      {isConnected ? (
+        <>
+          <Wallet className="h-4 w-4 group-hover:hidden" />
+          <LogOut className="h-4 w-4 hidden group-hover:inline" />
+        </>
+      ) : (
+        <Wallet className="h-4 w-4" />
+      )}
       {isConnecting 
         ? 'Connecting...' 
         : isConnected 
-          ? formatAddress(address || '')
+          ? (
+              <>
+                <span className="group-hover:hidden">
+                  {formatAddress(address || '')}
+                </span>
+                <span className="hidden group-hover:inline">
+                  Disconnect
+                </span>
+              </>
+            )
           : 'Connect Wallet'
       }
     </Button>

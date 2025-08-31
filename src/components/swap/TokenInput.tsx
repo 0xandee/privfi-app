@@ -1,15 +1,16 @@
 import React from 'react';
-import { ChevronDown } from 'lucide-react';
+import { TokenSelector } from './TokenSelector';
+import { Token } from '@/constants/tokens';
 
 interface TokenInputProps {
   label: string;
   amount: string;
   balance: string;
-  tokenSymbol: string;
+  selectedToken: Token;
   placeholder?: string;
   usdValue?: string;
   onAmountChange: (value: string) => void;
-  onTokenSelect?: () => void;
+  onTokenChange: (token: Token) => void;
   showPercentageButtons?: boolean;
   percentageButtons?: number[];
   onPercentageClick?: (percentage: number) => void;
@@ -19,11 +20,11 @@ export const TokenInput: React.FC<TokenInputProps> = ({
   label,
   amount,
   balance,
-  tokenSymbol,
+  selectedToken,
   placeholder = "0.0",
   usdValue = "~$0.00",
   onAmountChange,
-  onTokenSelect,
+  onTokenChange,
   showPercentageButtons = false,
   percentageButtons = [],
   onPercentageClick,
@@ -44,10 +45,10 @@ export const TokenInput: React.FC<TokenInputProps> = ({
             className="token-input flex-1"
             placeholder={placeholder}
           />
-          <div className="token-selector" onClick={onTokenSelect}>
-            <span className="font-medium">{tokenSymbol}</span>
-            <ChevronDown className="h-4 w-4" />
-          </div>
+          <TokenSelector
+            selectedToken={selectedToken}
+            onTokenChange={onTokenChange}
+          />
         </div>
 
         <div className="flex items-center justify-between">

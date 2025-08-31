@@ -46,8 +46,12 @@ const SwapInterface = () => {
           toAmount={swapForm.toAmount}
           balance={walletConnection.balance}
           percentageButtons={swapForm.percentageButtons}
+          fromToken={swapForm.fromToken}
+          toToken={swapForm.toToken}
           onFromAmountChange={swapForm.setFromAmount}
           onToAmountChange={swapForm.setToAmount}
+          onFromTokenChange={swapForm.setFromToken}
+          onToTokenChange={swapForm.setToToken}
           onPercentageClick={handlePercentageClick}
           onSwap={swapForm.handleSwap}
         />
