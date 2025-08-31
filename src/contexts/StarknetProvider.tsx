@@ -16,7 +16,6 @@ export const StarknetProvider: React.FC<StarknetProviderProps> = ({ children }) 
   // Use explicit connectors instead of useInjectedConnectors
   const connectors = [argent(), braavos()];
 
-  console.log('StarknetProvider connectors:', connectors.map(c => ({ id: c.id, name: c.name })));
 
   return (
     <StarknetConfig

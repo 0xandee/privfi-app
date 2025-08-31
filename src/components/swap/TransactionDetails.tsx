@@ -1,38 +1,181 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Button } from '../ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import { Info } from 'lucide-react';
 
 interface TransactionDetailsProps {
-  price?: string;
-  serviceFee?: string;
-  minimumReceived?: string;
-  maximumSlippage?: string;
+  rate?: string;
+  integratorFee?: string;
+  integratorFeesBps?: string;
+  avnuFee?: string;
+  avnuFeesBps?: string;
+  minReceived?: string;
+  slippage?: number;
+  onSlippageChange?: (slippage: number) => void;
+  toTokenSymbol?: string;
 }
 
 export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
-  price = "0",
-  serviceFee = "0%",
-  minimumReceived = "0",
-  maximumSlippage = "0%",
+  rate = "0",
+  integratorFee = "$0.00",
+  integratorFeesBps = "0",
+  avnuFee = "$0.00", 
+  avnuFeesBps = "0",
+  minReceived = "0",
+  slippage = 0.5,
+  onSlippageChange,
+  toTokenSymbol = "",
 }) => {
+  const [customSlippage, setCustomSlippage] = useState('');
+  const [isCustomMode, setIsCustomMode] = useState(false);
+
+  const presetSlippages = [0.1, 0.5, 1];
+
+  // Calculate fee amounts first to determine transaction value
+  const integratorFeeAmount = parseFloat(integratorFee.replace('$', '') || "0");
+  const avnuFeeAmount = parseFloat(avnuFee.replace('$', '') || "0");
+  
+  // Calculate Typhoon fee based on the same base as other fees
+  // If integrator fee is 15 bps and typhoon is 50 bps, typhoon should be ~3.33x the integrator fee
+  const typhoonFeeAmount = integratorFeeAmount > 0 ? (integratorFeeAmount * 50) / 15 : 0;
+  const typhoonFeeBps = 50; // 0.5% = 50 basis points
+
+  // Calculate total platform fees percentage and amount
+  // Parse hex strings correctly (API returns hex values like '0xf')
+  const integratorBpsValue = integratorFeesBps ? parseInt(integratorFeesBps, 16) : 0;
+  const avnuBpsValue = avnuFeesBps ? parseInt(avnuFeesBps, 16) : 0;
+  let totalFeesBps = integratorBpsValue + avnuBpsValue + typhoonFeeBps; // Include Typhoon fee
+  
+  // Fallback: if API bps values are not available or zero, calculate from USD amounts
+  // Known: Integrator fee is 15 bps (0.15%), Typhoon is 50 bps (0.5%)
+  if (integratorBpsValue + avnuBpsValue === 0) {
+    if (integratorFeeAmount > 0) {
+      // Integrator is 15 bps, so we can estimate AVNU bps from ratio
+      const integratorBps = 15;
+      const estimatedAvnuBps = avnuFeeAmount > 0 ? Math.round((avnuFeeAmount / integratorFeeAmount) * integratorBps) : 0;
+      totalFeesBps = integratorBps + estimatedAvnuBps + typhoonFeeBps;
+    }
+  }
+  
+  // Convert bps to percentage with appropriate decimal places
+  // 1 bps = 0.01%, so divide by 100
+  const percentageValue = totalFeesBps / 100;
+  const totalFeesPercentage = percentageValue.toFixed(2);
+  const totalFeeAmount = (integratorFeeAmount + avnuFeeAmount + typhoonFeeAmount).toFixed(3);
+
+  const handleSlippageClick = (value: number) => {
+    setIsCustomMode(false);
+    setCustomSlippage('');
+    onSlippageChange?.(value);
+  };
+
+  const handleCustomSlippageChange = (value: string) => {
+    setCustomSlippage(value);
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue) && numValue >= 0 && numValue <= 50) {
+      onSlippageChange?.(numValue);
+    }
+  };
+
+  const toggleCustomMode = () => {
+    setIsCustomMode(!isCustomMode);
+    if (!isCustomMode) {
+      setCustomSlippage(slippage.toString());
+    }
+  };
+
   return (
-    <div className="crypto-card px-4 py-6 mt-6 space-y-3">
+    <div className="crypto-card px-4 py-6 mt-6 space-y-4">
       <div className="transaction-detail">
-        <span className="transaction-detail-label">Price</span>
-        <span className="transaction-detail-value">{price}</span>
+        <span className="transaction-detail-label">Rate</span>
+        <span className="transaction-detail-value">{rate}</span>
       </div>
 
       <div className="transaction-detail">
-        <span className="transaction-detail-label">Service fee</span>
-        <span className="transaction-detail-value">{serviceFee}</span>
+        <Tooltip delayDuration={200}>
+          <TooltipTrigger asChild>
+            <span className="transaction-detail-label flex items-center gap-1 cursor-pointer">
+              Platform Fees ({totalFeesPercentage}%)
+              <Info className="h-3 w-3 text-gray-400" />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="w-32">
+            <div className="space-y-1 text-xs">
+              <div className="flex justify-between">
+                <span>Privfi</span>
+                <span>0.15%</span>
+              </div>
+              <div className="flex justify-between">
+                <span>AVNU</span>
+                <span>{(avnuBpsValue / 100).toFixed(2)}%</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Typhoon</span>
+                <span>0.50%</span>
+              </div>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+        <span className="transaction-detail-value">${totalFeeAmount}</span>
       </div>
 
       <div className="transaction-detail">
-        <span className="transaction-detail-label">Minimum received</span>
-        <span className="transaction-detail-value">{minimumReceived}</span>
+        <span className="transaction-detail-label">Min Received</span>
+        <span className="transaction-detail-value">{minReceived} {toTokenSymbol}</span>
       </div>
 
-      <div className="transaction-detail">
-        <span className="transaction-detail-label">Maximum slippage</span>
-        <span className="transaction-detail-value">{maximumSlippage}</span>
+      <div className="space-y-2">
+        <div className="transaction-detail">
+          <span className="transaction-detail-label">Slippage</span>
+          <span className="transaction-detail-value">{slippage}%</span>
+        </div>
+        
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          {presetSlippages.map((preset) => (
+            <Button
+              key={preset}
+              variant="outline"
+              size="sm"
+              className={`percentage-button ${
+                !isCustomMode && Math.abs(slippage - preset) < 0.01
+                  ? 'bg-percentage-button-active text-percentage-button-active-foreground'
+                  : ''
+              }`}
+              onClick={() => handleSlippageClick(preset)}
+            >
+              {preset}%
+            </Button>
+          ))}
+          
+          <Button
+            variant="outline"
+            size="sm"
+            className={`percentage-button ${
+              isCustomMode 
+                ? 'bg-percentage-button-active text-percentage-button-active-foreground'
+                : ''
+            }`}
+            onClick={toggleCustomMode}
+          >
+            Custom
+          </Button>
+          
+          {isCustomMode && (
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                value={customSlippage}
+                onChange={(e) => handleCustomSlippageChange(e.target.value)}
+                placeholder="0.5"
+                min="0"
+                max="50"
+                step="0.1"
+                className="w-16 px-2 py-1 text-sm bg-[#1a1a1a] border border-[#2a2a2a] rounded text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-400">%</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

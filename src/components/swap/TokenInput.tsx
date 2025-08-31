@@ -47,12 +47,43 @@ export const TokenInput: React.FC<TokenInputProps> = ({
   const [activePercentage, setActivePercentage] = useState<number | null>(null);
   
   // Use pre-fetched price data if available, otherwise fetch individually
-  const shouldSkipIndividualFetch = priceData && priceData[selectedToken.address.toLowerCase()];
+  // Try multiple address formats to find a match
+  const findPriceInData = (priceData: { [address: string]: TokenPrice } | undefined, tokenAddress: string) => {
+    if (!priceData) return null;
+    
+    const normalizedAddr = tokenAddress.toLowerCase();
+    
+    // Try exact match first
+    if (priceData[normalizedAddr]) return priceData[normalizedAddr];
+    
+    // Try with padded zero if address is 65 chars (0x + 63 chars)
+    if (normalizedAddr.length === 65) {
+      const paddedAddr = '0x0' + normalizedAddr.slice(2);
+      if (priceData[paddedAddr]) return priceData[paddedAddr];
+    }
+    
+    // Try without leading zero if address starts with 0x0 and is 66 chars
+    if (normalizedAddr.startsWith('0x0') && normalizedAddr.length === 66) {
+      const unpaddedAddr = '0x' + normalizedAddr.slice(3);
+      if (priceData[unpaddedAddr]) return priceData[unpaddedAddr];
+    }
+    
+    return null;
+  };
+  
+  const priceFromData = findPriceInData(priceData, selectedToken.address);
+  // Only fetch individual prices if we don't have price data AND there's an amount to calculate USD for
+  // BUT if this is the "From" field with an amount, wait for quotes instead of individual fetch
+  const hasAmountToCalculate = amount && parseFloat(amount) > 0;
+  const isFromFieldWithAmount = label === 'From' && hasAmountToCalculate;
+  const shouldSkipIndividualFetch = !!priceFromData || !hasAmountToCalculate || isFromFieldWithAmount;
+  
+  
   const { price: fetchedPrice, isLoading: isPriceLoading } = useTokenPrice(
     shouldSkipIndividualFetch ? '' : selectedToken.address
   );
   
-  const price = priceData?.[selectedToken.address.toLowerCase()]?.priceInUSD || fetchedPrice;
+  const price = priceFromData?.priceInUSD || fetchedPrice;
   const isLoading = shouldSkipIndividualFetch ? false : isPriceLoading;
 
 
@@ -61,12 +92,15 @@ export const TokenInput: React.FC<TokenInputProps> = ({
     ? getTokenUSDDisplay(validation.value, price, selectedToken.decimals)
     : "~$0.00";
 
-  // Update parent component when validated value changes
+  // Sync validation value with amount prop when it changes (for programmatic updates)
   useEffect(() => {
-    if (validation.value !== amount) {
-      onAmountChange(validation.value);
+    // For read-only fields, always sync with the prop
+    if (readOnly && amount !== validation.value) {
+      validation.setValue(amount);
     }
-  }, [validation.value, amount, onAmountChange]);
+    // For editable fields, don't sync to avoid overwriting user input
+    // The parent should be the source of truth via onAmountChange callbacks
+  }, [amount, readOnly, validation]);
 
   // Clear active percentage when user manually types or when token/balance changes
   useEffect(() => {

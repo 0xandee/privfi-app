@@ -78,14 +78,17 @@ export const useTokenPrices = (tokenAddresses: string[]) => {
 };
 
 export const useTokenPrice = (tokenAddress: string) => {
-  const { data, isLoading, error } = useTokenPrices([tokenAddress]);
+  // Skip API call entirely if no address provided
+  const addressesToFetch = tokenAddress && tokenAddress.trim() !== '' ? [tokenAddress] : [];
+  const { data, isLoading, error } = useTokenPrices(addressesToFetch);
   
-  const price = data?.[tokenAddress.toLowerCase()];
+  const price = tokenAddress ? data?.[tokenAddress.toLowerCase()] : null;
+  
   
   return {
     price: price?.priceInUSD || 0,
     priceData: price,
-    isLoading,
-    error,
+    isLoading: addressesToFetch.length > 0 ? isLoading : false,
+    error: addressesToFetch.length > 0 ? error : null,
   };
 };

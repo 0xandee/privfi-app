@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowUpDown } from 'lucide-react';
+import { ArrowUpDown, RefreshCw } from 'lucide-react';
 import { TokenInput } from './TokenInput';
 import { TransactionDetails } from './TransactionDetails';
 import { Button } from '../ui/button';
@@ -7,6 +7,7 @@ import { Token } from '@/constants/tokens';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
 import { useTokenPrices } from '@/hooks/useTokenPrices';
 import { ErrorMessage } from '@/components/ui/error-message';
+import { AVNUQuote, formatQuoteForDisplay, extractTokenPricesFromQuote } from '@/services/avnu';
 
 interface SwapCardProps {
   fromAmount: string;
@@ -22,6 +23,19 @@ interface SwapCardProps {
   onToTokenChange: (token: Token) => void;
   onSwap: () => void;
   onSwapDirection: () => void;
+  onPercentageClick: (percentage: number, balance: string) => void;
+  // Quote-related props
+  selectedQuote?: AVNUQuote | null;
+  formattedQuote?: ReturnType<typeof formatQuoteForDisplay> | null;
+  isLoadingQuotes?: boolean;
+  quotesError?: string | null;
+  isQuoteExpired?: boolean;
+  timeToExpiry?: number;
+  onRefreshQuotes?: () => void;
+  // Slippage-related props
+  slippage?: number;
+  minReceived?: string;
+  onSlippageChange?: (slippage: number) => void;
 }
 
 export const SwapCard: React.FC<SwapCardProps> = ({
@@ -38,14 +52,30 @@ export const SwapCard: React.FC<SwapCardProps> = ({
   onToTokenChange,
   onSwap,
   onSwapDirection,
+  onPercentageClick,
+  // Quote-related props
+  selectedQuote,
+  formattedQuote,
+  isLoadingQuotes = false,
+  quotesError,
+  isQuoteExpired = false,
+  // Slippage-related props
+  slippage = 0.5,
+  minReceived = "0",
+  onSlippageChange,
 }) => {
+
   // Fetch balances for selected tokens
   const fromTokenBalance = useTokenBalance(fromToken, walletAddress);
   const toTokenBalance = useTokenBalance(toToken, walletAddress);
 
-  // Batch fetch prices for both tokens to optimize API calls
-  const { data: tokenPrices } = useTokenPrices([fromToken.address, toToken.address]);
-  
+  // Use token prices from AVNU quotes when available
+  // Don't fetch fallback prices - quotes provide all the price data we need
+  const tokenPrices = selectedQuote
+    ? extractTokenPricesFromQuote(selectedQuote, fromToken.decimals, toToken.decimals)
+    : undefined;
+
+
 
 
   return (
@@ -64,13 +94,14 @@ export const SwapCard: React.FC<SwapCardProps> = ({
           onTokenChange={onFromTokenChange}
           showPercentageButtons={true}
           percentageButtons={percentageButtons}
+          onPercentageClick={(percentage) => onPercentageClick(percentage, fromTokenBalance.balance)}
         />
 
         {/* Swap Direction with Separator */}
         <div className="relative flex justify-center py-2 -mx-6">
           {/* Separator line going through button */}
           <div className="absolute top-1/2 left-0 right-0 h-1 bg-[#1C1C1C] transform -translate-y-1/2"></div>
-          <button 
+          <button
             onClick={onSwapDirection}
             className="w-10 h-10 bg-[#1C1C1C] text-percentage-button-foreground rounded-md hover:bg-percentage-button-hover transition-colors cursor-pointer text-sm font-medium relative z-10 flex items-center justify-center"
           >
@@ -94,24 +125,73 @@ export const SwapCard: React.FC<SwapCardProps> = ({
       </div>
 
       {/* Transaction Details */}
-      {/* <TransactionDetails /> */}
+      {fromAmount && parseFloat(fromAmount) > 0 && isValidTokenPair && (
+        <>
+          {/* Loading state */}
+          {isLoadingQuotes && (
+            <div className="mt-6 bg-[#1a1a1a] rounded-lg p-4 border border-[#2a2a2a]">
+              <div className="flex items-center space-x-2">
+                <RefreshCw className="h-4 w-4 animate-spin text-blue-400" />
+                <span className="text-sm text-gray-300">Getting best quotes...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Error state */}
+          {quotesError && !isLoadingQuotes && (
+            <ErrorMessage
+              message={`Failed to fetch quotes: ${quotesError}`}
+              className="mt-6 mb-0"
+            />
+          )}
+
+          {/* Transaction Details with quote data */}
+          {formattedQuote && selectedQuote && !quotesError && (
+            <TransactionDetails
+              rate={formattedQuote.exchangeRate}
+              integratorFee={formattedQuote.integratorFee}
+              integratorFeesBps={selectedQuote.integratorFeesBps}
+              avnuFee={formattedQuote.avnuFee}
+              avnuFeesBps={selectedQuote.avnuFeesBps}
+              minReceived={minReceived}
+              slippage={slippage}
+              onSlippageChange={onSlippageChange}
+              toTokenSymbol={toToken.symbol}
+            />
+          )}
+        </>
+      )}
 
       {/* Same Token Error */}
       {!isValidTokenPair && (
-        <ErrorMessage 
-          message="Cannot swap the same token. Please select different tokens." 
-          className="mt-4" 
+        <ErrorMessage
+          message="Cannot swap the same token. Please select different tokens."
+          className="mt-6"
         />
       )}
 
       {/* Swap Button */}
       <div className="mt-6 space-y-3">
-        <Button 
-          className={`swap-button ${!isValidTokenPair ? 'opacity-50 cursor-not-allowed' : ''}`}
+        <Button
+          className={`swap-button ${(!isValidTokenPair || isQuoteExpired || (quotesError && fromAmount && parseFloat(fromAmount) > 0)) ? 'opacity-50 cursor-not-allowed' : ''}`}
           onClick={onSwap}
-          disabled={!isValidTokenPair || !fromAmount || parseFloat(fromAmount) <= 0}
+          disabled={
+            !isValidTokenPair ||
+            !fromAmount ||
+            parseFloat(fromAmount) <= 0 ||
+            (fromAmount && parseFloat(fromAmount) > 0 && isValidTokenPair && !selectedQuote && !isLoadingQuotes) ||
+            isQuoteExpired ||
+            (quotesError && fromAmount && parseFloat(fromAmount) > 0)
+          }
         >
-          {!isValidTokenPair ? 'Select Different Tokens' : 'Swap'}
+          {(() => {
+            if (!isValidTokenPair) return 'Select Different Tokens';
+            if (isQuoteExpired) return 'Quote Expired - Refresh';
+            if (quotesError && fromAmount && parseFloat(fromAmount) > 0) return 'Quote Error';
+            if (isLoadingQuotes) return 'Getting Quote...';
+            if (fromAmount && parseFloat(fromAmount) > 0 && isValidTokenPair && !selectedQuote) return 'No Quote Available';
+            return 'Swap';
+          })()}
         </Button>
       </div>
     </div>

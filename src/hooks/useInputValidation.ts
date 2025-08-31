@@ -29,10 +29,10 @@ export const useInputValidation = (
   const handleChange = useCallback((rawInput: string) => {
     // Always sanitize the input first
     const sanitizedInput = sanitizeNumericInput(rawInput);
-    
+
     // Validate the sanitized input
     const validation = validate(sanitizedInput);
-    
+
     setState(prev => ({
       value: validation.sanitizedValue || sanitizedInput,
       error: validation.error || null,
@@ -65,9 +65,9 @@ export const useInputValidation = (
   }, [validate]);
 
   // Show error only if the input has been touched and is invalid
-  const displayError = useMemo(() => 
+  const displayError = useMemo(() =>
     state.isTouched && !state.isValid ? state.error : null
-  , [state.isTouched, state.isValid, state.error]);
+    , [state.isTouched, state.isValid, state.error]);
 
   // Check if amount exceeds balance specifically
   const exceedsBalance = useMemo(() => {

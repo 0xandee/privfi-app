@@ -13,32 +13,21 @@ export const useWalletConnection = () => {
   const balance = '0.0000'; // TODO: Implement balance fetching with useBalance hook
 
   const handleConnectWithConnector = async (selectedConnector: typeof connectors[0]) => {
-    console.log('Connecting with connector:', selectedConnector);
     setIsConnecting(true);
     setShowWalletModal(false);
 
-    try {
-      connect({ connector: selectedConnector });
-    } catch (error) {
-      console.error('Connection failed:', error);
-    } finally {
-      setTimeout(() => setIsConnecting(false), 2000);
-    }
+    connect({ connector: selectedConnector });
+    setTimeout(() => setIsConnecting(false), 2000);
   };
 
   const handleConnectFallback = async () => {
-    console.log('Using get-starknet fallback connection');
     setIsConnecting(true);
     setShowWalletModal(false);
 
     try {
-      const wallet = await getStarknetConnect();
-      console.log('get-starknet result:', wallet);
-      if (wallet) {
-        console.log('Wallet connected via get-starknet');
-      }
+      await getStarknetConnect();
     } catch (error) {
-      console.error('get-starknet connection failed:', error);
+      // Silently handle connection errors
     } finally {
       setIsConnecting(false);
     }

@@ -8,7 +8,8 @@ import { SwapCard } from '@/components/swap/SwapCard';
 
 const SwapInterface = () => {
   const walletConnection = useWalletConnection();
-  const swapForm = useSwapForm();
+  const swapForm = useSwapForm(walletConnection.address);
+
 
 
   return (
@@ -55,6 +56,19 @@ const SwapInterface = () => {
           onToTokenChange={swapForm.setToToken}
           onSwap={swapForm.handleSwap}
           onSwapDirection={swapForm.handleSwapDirection}
+          onPercentageClick={swapForm.handlePercentageClick}
+          // Quote-related props
+          selectedQuote={swapForm.selectedQuote}
+          formattedQuote={swapForm.formattedQuote}
+          isLoadingQuotes={swapForm.isLoadingQuotes}
+          quotesError={swapForm.quotesError}
+          isQuoteExpired={swapForm.isQuoteExpired}
+          timeToExpiry={swapForm.timeToExpiry}
+          onRefreshQuotes={swapForm.refreshQuotes}
+          // Slippage-related props
+          slippage={swapForm.slippage}
+          minReceived={swapForm.minReceived}
+          onSlippageChange={swapForm.handleSlippageChange}
         />
       </div>
     </div>
