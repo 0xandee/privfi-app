@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Button } from '../ui/button';
+import React from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '../ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { Info } from 'lucide-react';
 
@@ -26,10 +26,8 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
   onSlippageChange,
   toTokenSymbol = "",
 }) => {
-  const [customSlippage, setCustomSlippage] = useState('');
-  const [isCustomMode, setIsCustomMode] = useState(false);
 
-  const presetSlippages = [0.1, 0.5, 1];
+  const presetSlippages = [0, 0.1, 0.5, 1];
 
   // Calculate fee amounts first to determine transaction value
   const integratorFeeAmount = parseFloat(integratorFee.replace('$', '') || "0");
@@ -64,24 +62,7 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
   const totalFeeAmount = (integratorFeeAmount + avnuFeeAmount + typhoonFeeAmount).toFixed(3);
 
   const handleSlippageClick = (value: number) => {
-    setIsCustomMode(false);
-    setCustomSlippage('');
     onSlippageChange?.(value);
-  };
-
-  const handleCustomSlippageChange = (value: string) => {
-    setCustomSlippage(value);
-    const numValue = parseFloat(value);
-    if (!isNaN(numValue) && numValue >= 0 && numValue <= 50) {
-      onSlippageChange?.(numValue);
-    }
-  };
-
-  const toggleCustomMode = () => {
-    setIsCustomMode(!isCustomMode);
-    if (!isCustomMode) {
-      setCustomSlippage(slippage.toString());
-    }
   };
 
   return (
@@ -124,58 +105,20 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
         <span className="transaction-detail-value">{minReceived} {toTokenSymbol}</span>
       </div>
 
-      <div className="space-y-2">
-        <div className="transaction-detail">
-          <span className="transaction-detail-label">Slippage</span>
-          <span className="transaction-detail-value">{slippage}%</span>
-        </div>
-        
-        <div className="flex items-center gap-2 flex-wrap justify-end">
-          {presetSlippages.map((preset) => (
-            <Button
-              key={preset}
-              variant="outline"
-              size="sm"
-              className={`percentage-button ${
-                !isCustomMode && Math.abs(slippage - preset) < 0.01
-                  ? 'bg-percentage-button-active text-percentage-button-active-foreground'
-                  : ''
-              }`}
-              onClick={() => handleSlippageClick(preset)}
-            >
-              {preset}%
-            </Button>
-          ))}
-          
-          <Button
-            variant="outline"
-            size="sm"
-            className={`percentage-button ${
-              isCustomMode 
-                ? 'bg-percentage-button-active text-percentage-button-active-foreground'
-                : ''
-            }`}
-            onClick={toggleCustomMode}
-          >
-            Custom
-          </Button>
-          
-          {isCustomMode && (
-            <div className="flex items-center gap-1">
-              <input
-                type="number"
-                value={customSlippage}
-                onChange={(e) => handleCustomSlippageChange(e.target.value)}
-                placeholder="0.5"
-                min="0"
-                max="50"
-                step="0.1"
-                className="w-16 px-2 py-1 text-sm bg-[#1a1a1a] border border-[#2a2a2a] rounded text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <span className="text-sm text-gray-400">%</span>
-            </div>
-          )}
-        </div>
+      <div className="transaction-detail">
+        <span className="transaction-detail-label">Slippage</span>
+        <Select value={slippage.toString()} onValueChange={(value) => handleSlippageClick(parseFloat(value))}>
+          <SelectTrigger className="token-selector w-24 border-0 focus:ring-0 shadow-none !bg-token-selector">
+            <span className="font-medium">{slippage}%</span>
+          </SelectTrigger>
+          <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
+            {presetSlippages.map((preset) => (
+              <SelectItem key={preset} value={preset.toString()} className="cursor-pointer [&>span:first-child]:hidden pl-3">
+                <span className="font-medium">{preset}%</span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );

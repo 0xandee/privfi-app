@@ -134,11 +134,13 @@ export const useSwapForm = (walletAddress?: string) => {
   const isValidTokenPair = fromToken.address !== toToken.address;
 
   // Calculate minimum received based on slippage
+  // Note: The toAmount already has Typhoon fee deducted from useSwapEstimation
   const calculateMinReceived = useCallback((amount: string, slippagePercent: number): string => {
     if (!amount || parseFloat(amount) <= 0) return '0';
     const amountNum = parseFloat(amount);
+    // Apply slippage to the amount (which already has Typhoon fee deducted)
     const minReceived = amountNum * (1 - slippagePercent / 100);
-    return minReceived.toFixed(6);
+    return minReceived.toFixed(8).replace(/\.?0+$/, '');
   }, []);
 
   const minReceived = calculateMinReceived(toAmount, slippage);

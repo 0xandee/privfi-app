@@ -127,15 +127,6 @@ export const SwapCard: React.FC<SwapCardProps> = ({
       {/* Transaction Details */}
       {fromAmount && parseFloat(fromAmount) > 0 && isValidTokenPair && (
         <>
-          {/* Loading state */}
-          {isLoadingQuotes && (
-            <div className="mt-6 bg-[#1a1a1a] rounded-lg p-4 border border-[#2a2a2a]">
-              <div className="flex items-center space-x-2">
-                <RefreshCw className="h-4 w-4 animate-spin text-blue-400" />
-                <span className="text-sm text-gray-300">Getting best quotes...</span>
-              </div>
-            </div>
-          )}
 
           {/* Error state */}
           {quotesError && !isLoadingQuotes && (
@@ -184,11 +175,16 @@ export const SwapCard: React.FC<SwapCardProps> = ({
             (quotesError && fromAmount && parseFloat(fromAmount) > 0)
           }
         >
-          {(() => {
+{(() => {
             if (!isValidTokenPair) return 'Select Different Tokens';
             if (isQuoteExpired) return 'Quote Expired - Refresh';
             if (quotesError && fromAmount && parseFloat(fromAmount) > 0) return 'Quote Error';
-            if (isLoadingQuotes) return 'Getting Quote...';
+            if (isLoadingQuotes) return (
+              <div className="flex items-center gap-2">
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                <span>Getting best quotes...</span>
+              </div>
+            );
             if (fromAmount && parseFloat(fromAmount) > 0 && isValidTokenPair && !selectedQuote) return 'No Quote Available';
             return 'Swap';
           })()}

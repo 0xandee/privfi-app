@@ -9,6 +9,7 @@ import {
   AVNUQuoteRequest
 } from '@/services/avnu';
 import { Token } from '@/constants/tokens';
+import { TYPHOON_FEE_MULTIPLIER } from '@/constants/fees';
 
 export interface SwapQuoteParams {
   fromToken: Token;
@@ -195,15 +196,17 @@ export const useSwapEstimation = (params: SwapQuoteParams) => {
       // Convert to token units by dividing by 10^decimals
       const tokenAmount = buyAmountDecimal / Math.pow(10, params.toToken.decimals);
 
-      // Format to reasonable decimal places and remove trailing zeros
-      const formatted = tokenAmount.toFixed(8).replace(/\.?0+$/, '');
+      // Deduct Typhoon SDK fee (0.50%)
+      const tokenAmountAfterTyphoonFee = tokenAmount * TYPHOON_FEE_MULTIPLIER;
 
+      // Format to reasonable decimal places and remove trailing zeros
+      const formatted = tokenAmountAfterTyphoonFee.toFixed(8).replace(/\.?0+$/, '');
 
       return formatted;
     } catch (error) {
       return '';
     }
-  }, [selectedQuote, params.toToken.decimals, params.fromToken.symbol, params.toToken.symbol]);
+  }, [selectedQuote, params.toToken.decimals]);
 
 
   return {
