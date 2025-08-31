@@ -10,9 +10,6 @@ const SwapInterface = () => {
   const walletConnection = useWalletConnection();
   const swapForm = useSwapForm();
 
-  const handlePercentageClick = (percentage: number) => {
-    swapForm.handlePercentageClick(percentage, walletConnection.balance);
-  };
 
   return (
     <div className="min-h-screen bg-background p-4 flex flex-col items-center justify-center">
@@ -44,16 +41,17 @@ const SwapInterface = () => {
         <SwapCard
           fromAmount={swapForm.fromAmount}
           toAmount={swapForm.toAmount}
-          balance={walletConnection.balance}
           percentageButtons={swapForm.percentageButtons}
           fromToken={swapForm.fromToken}
           toToken={swapForm.toToken}
+          walletAddress={walletConnection.address}
+          isValidTokenPair={swapForm.isValidTokenPair}
           onFromAmountChange={swapForm.setFromAmount}
           onToAmountChange={swapForm.setToAmount}
           onFromTokenChange={swapForm.setFromToken}
           onToTokenChange={swapForm.setToToken}
-          onPercentageClick={handlePercentageClick}
           onSwap={swapForm.handleSwap}
+          onSwapDirection={swapForm.handleSwapDirection}
         />
       </div>
     </div>

@@ -5,22 +5,12 @@ import { connect as getStarknetConnect } from '@starknet-io/get-starknet';
 export const useWalletConnection = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
-  
+
   const { address, isConnected } = useAccount();
   const { connect, connectors, error: connectError, status } = useConnect();
   const { disconnect } = useDisconnect();
-  
-  const balance = '0.0000'; // TODO: Implement balance fetching with useBalance hook
 
-  // Debug logging
-  console.log('Wallet Debug:', {
-    isConnected,
-    address,
-    connectError,
-    status,
-    connectorsCount: connectors.length,
-    connectors: connectors.map(c => ({ id: c.id, name: c.name }))
-  });
+  const balance = '0.0000'; // TODO: Implement balance fetching with useBalance hook
 
   const handleConnectWithConnector = async (selectedConnector: typeof connectors[0]) => {
     console.log('Connecting with connector:', selectedConnector);
@@ -68,7 +58,7 @@ export const useWalletConnection = () => {
     balance,
     connectors,
     connectError,
-    
+
     // Actions
     handleConnectWithConnector,
     handleConnectFallback,

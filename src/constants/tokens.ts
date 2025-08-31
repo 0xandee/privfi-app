@@ -70,3 +70,33 @@ export const parseTokenAmount = (amount: string, decimals: number): string => {
   const num = parseFloat(amount);
   return (num * Math.pow(10, decimals)).toString();
 };
+
+// Format balance for display with appropriate precision
+export const formatBalanceForDisplay = (balance: string, tokenSymbol: string): string => {
+  const num = parseFloat(balance);
+  
+  // Handle zero or invalid balances
+  if (isNaN(num) || num === 0) {
+    return '0.0';
+  }
+  
+  // For stablecoins (USDC), use 2 decimal places
+  if (tokenSymbol === 'USDC') {
+    if (num < 0.01) {
+      return '< 0.01';
+    }
+    return num.toFixed(2);
+  }
+  
+  // For other tokens, use different precision based on value size
+  if (num < 0.0001) {
+    return '< 0.0001';
+  } else if (num < 1) {
+    return num.toFixed(4);
+  } else if (num < 1000) {
+    return num.toFixed(4);
+  } else {
+    // For large amounts, use fewer decimals
+    return num.toFixed(2);
+  }
+};

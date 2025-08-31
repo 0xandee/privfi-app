@@ -27,29 +27,29 @@ export const WalletConnectionButton: React.FC<WalletConnectionButtonProps> = ({
       size="sm"
       onClick={isConnected ? onDisconnect : onConnect}
       disabled={isConnecting}
-      className="flex items-center gap-2 group"
+      className="flex items-center gap-2 group w-40"
     >
-      {isConnected ? (
+      {isConnected && !isConnecting ? (
         <>
           <Wallet className="h-4 w-4 group-hover:hidden" />
-          <LogOut className="h-4 w-4 hidden group-hover:inline" />
+          {/* <LogOut className="h-4 w-4 hidden group-hover:inline" /> */}
         </>
       ) : (
-        <Wallet className="h-4 w-4" />
+        <></>
       )}
-      {isConnecting 
-        ? 'Connecting...' 
-        : isConnected 
+      {isConnecting
+        ? 'Connecting...'
+        : isConnected
           ? (
-              <>
-                <span className="group-hover:hidden">
-                  {formatAddress(address || '')}
-                </span>
-                <span className="hidden group-hover:inline">
-                  Disconnect
-                </span>
-              </>
-            )
+            <>
+              <span className="group-hover:hidden">
+                {formatAddress(address || '')}
+              </span>
+              <span className="hidden group-hover:inline">
+                Disconnect
+              </span>
+            </>
+          )
           : 'Connect Wallet'
       }
     </Button>
