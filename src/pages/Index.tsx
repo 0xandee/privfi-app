@@ -1,4 +1,4 @@
-import SwapInterface from '@/components/SwapInterface';
+import { SwapInterface } from '@/features/swap';
 
 const Index = () => {
   return <SwapInterface />;
