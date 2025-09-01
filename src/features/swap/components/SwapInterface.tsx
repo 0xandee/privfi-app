@@ -70,6 +70,13 @@ const SwapInterface = () => {
             slippage={swapForm.slippage}
             minReceived={swapForm.minReceived}
             onSlippageChange={swapForm.handleSlippageChange}
+            // Swap execution props
+            isExecutingSwap={swapForm.isExecutingSwap}
+            isSwapSuccess={swapForm.isSwapSuccess}
+            isSwapError={swapForm.isSwapError}
+            swapError={swapForm.swapError}
+            transactionHash={swapForm.transactionHash}
+            onResetSwap={swapForm.resetSwap}
           />
         </SwapErrorBoundary>
       </div>

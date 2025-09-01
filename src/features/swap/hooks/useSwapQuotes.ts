@@ -4,7 +4,7 @@ import { Token, SwapQuote } from '@/shared/types';
 import { getDefaultDEX } from '../services';
 import { QuoteRequest } from '../types';
 import { TYPHOON_FEE_MULTIPLIER } from '@/constants/fees';
-import { formatQuoteForDisplay, AVNUQuote, getBestQuote, isQuoteExpired as isAVNUQuoteExpired } from '../services/avnu';
+import { formatQuoteForDisplay, AVNUQuote, getBestQuote, isQuoteExpired as isAVNUQuoteExpired, AVNUService } from '../services/avnu';
 
 export interface SwapQuoteParams {
   fromToken: Token;
@@ -80,7 +80,7 @@ export const useSwapQuotes = ({
         throw new Error('Only AVNU DEX is supported');
       }
       // Use the new getRawQuotes method
-      return (dex as any).getRawQuotes(quoteParams);
+      return (dex as AVNUService).getRawQuotes(quoteParams);
     },
     enabled: shouldFetch,
     staleTime: QUOTE_STALE_TIME,

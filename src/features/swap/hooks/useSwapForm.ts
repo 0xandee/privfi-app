@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { Token } from '@/shared/types';
 import { STARKNET_TOKENS, POPULAR_PAIRS, DEFAULT_TOKENS } from '@/constants/tokens';
 import { useSwapQuotes, useSwapEstimation } from './useSwapQuotes';
+import { useSwapExecution } from './useSwapExecution';
 
 export const useSwapForm = (walletAddress?: string) => {
   const [fromAmount, setFromAmount] = useState('');
@@ -26,6 +27,12 @@ export const useSwapForm = (walletAddress?: string) => {
     toToken,
     fromAmount,
     walletAddress,
+  });
+
+  // Swap execution hook
+  const swapExecution = useSwapExecution({
+    selectedQuote: swapQuotes.selectedQuote,
+    slippage,
   });
 
   // Get a suitable alternative token when same token is selected
@@ -146,7 +153,7 @@ export const useSwapForm = (walletAddress?: string) => {
     setSlippage(newSlippage);
   }, []);
 
-  const handleSwap = () => {
+  const handleSwap = useCallback(() => {
     if (!isValidTokenPair) {
       return;
     }
@@ -160,8 +167,9 @@ export const useSwapForm = (walletAddress?: string) => {
       return;
     }
 
-    // TODO: Implement actual swap execution with selected quote
-  };
+    // Execute the swap using the swap execution hook
+    swapExecution.executeSwap();
+  }, [isValidTokenPair, swapQuotes, swapExecution]);
 
   return {
     // State
@@ -184,6 +192,13 @@ export const useSwapForm = (walletAddress?: string) => {
     isQuoteExpired: swapQuotes.isExpired,
     timeToExpiry: swapQuotes.timeToExpiry,
 
+    // Swap execution state
+    isExecutingSwap: swapExecution.isLoading,
+    isSwapSuccess: swapExecution.isSuccess,
+    isSwapError: swapExecution.isError,
+    swapError: swapExecution.error,
+    transactionHash: swapExecution.transactionHash,
+
     // Actions
     setFromAmount: handleFromAmountChange,
     setToAmount,
@@ -195,5 +210,6 @@ export const useSwapForm = (walletAddress?: string) => {
     handleSlippageChange,
     refreshQuotes: swapQuotes.refetch,
     selectQuote: swapQuotes.selectQuote,
+    resetSwap: swapExecution.reset,
   };
 };

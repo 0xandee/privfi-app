@@ -1,8 +1,10 @@
 import { BaseDEXService } from './baseDEX';
 import { Token, SwapQuote, SwapRoute, GasEstimate } from '@/shared/types';
 import { QuoteRequest, QuoteResponse, ExecuteSwapRequest, ExecuteSwapResponse } from '../types';
+import { BuildSwapRequest, BuildSwapResponse } from '../types/swap';
 import { API_CONFIG, INTEGRATOR_CONFIG } from '@/core/config';
 import { withRetry } from '@/core/api';
+import { BuildSwapService } from './buildSwap';
 
 // AVNU-specific types (internal)
 interface AVNUQuoteRequest {
@@ -66,8 +68,11 @@ interface AVNURoute {
 }
 
 export class AVNUService extends BaseDEXService {
+  private buildService: BuildSwapService;
+
   constructor() {
     super('AVNU', API_CONFIG.avnu.baseUrl, API_CONFIG.avnu.timeout);
+    this.buildService = new BuildSwapService();
   }
 
   async getQuotes(request: QuoteRequest): Promise<QuoteResponse> {
@@ -95,6 +100,10 @@ export class AVNUService extends BaseDEXService {
       () => this.fetchAVNUQuotes(avnuRequest),
       { maxRetries: 2, delayMs: 1000, backoffMultiplier: 1.5 }
     );
+  }
+
+  async buildSwap(request: BuildSwapRequest): Promise<BuildSwapResponse> {
+    return this.buildService.buildSwap(request);
   }
 
   async executeSwap(request: ExecuteSwapRequest): Promise<ExecuteSwapResponse> {

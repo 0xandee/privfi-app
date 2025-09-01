@@ -35,6 +35,13 @@ interface SwapCardProps {
   slippage?: number;
   minReceived?: string;
   onSlippageChange?: (slippage: number) => void;
+  // Swap execution props
+  isExecutingSwap?: boolean;
+  isSwapSuccess?: boolean;
+  isSwapError?: boolean;
+  swapError?: string | null;
+  transactionHash?: string | null;
+  onResetSwap?: () => void;
 }
 
 export const SwapCard: React.FC<SwapCardProps> = ({
@@ -62,6 +69,13 @@ export const SwapCard: React.FC<SwapCardProps> = ({
   slippage = 0.5,
   minReceived = "0",
   onSlippageChange,
+  // Swap execution props
+  isExecutingSwap = false,
+  isSwapSuccess = false,
+  isSwapError = false,
+  swapError,
+  transactionHash,
+  onResetSwap,
 }) => {
 
   // Fetch balances for selected tokens
@@ -160,10 +174,12 @@ export const SwapCard: React.FC<SwapCardProps> = ({
         />
       )}
 
+
+
       {/* Swap Button */}
       <div className="mt-6 space-y-3">
         <Button
-          className={`swap-button ${(!isValidTokenPair || isQuoteExpired || (quotesError && fromAmount && parseFloat(fromAmount) > 0)) ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`swap-button ${(!isValidTokenPair || isQuoteExpired || (quotesError && fromAmount && parseFloat(fromAmount) > 0) || isExecutingSwap) ? 'opacity-50 cursor-not-allowed' : ''}`}
           onClick={onSwap}
           disabled={
             !isValidTokenPair ||
@@ -171,13 +187,20 @@ export const SwapCard: React.FC<SwapCardProps> = ({
             parseFloat(fromAmount) <= 0 ||
             (fromAmount && parseFloat(fromAmount) > 0 && isValidTokenPair && !selectedQuote && !isLoadingQuotes) ||
             isQuoteExpired ||
-            (quotesError && fromAmount && parseFloat(fromAmount) > 0)
+            (quotesError && fromAmount && parseFloat(fromAmount) > 0) ||
+            isExecutingSwap
           }
         >
-{(() => {
+          {(() => {
             if (!isValidTokenPair) return 'Select Different Tokens';
             if (isQuoteExpired) return 'Quote Expired - Refresh';
             if (quotesError && fromAmount && parseFloat(fromAmount) > 0) return 'Quote Error';
+            if (isExecutingSwap) return (
+              <div className="flex items-center gap-2">
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                <span>Executing swap...</span>
+              </div>
+            );
             if (isLoadingQuotes) return (
               <div className="flex items-center gap-2">
                 <RefreshCw className="h-4 w-4 animate-spin" />
