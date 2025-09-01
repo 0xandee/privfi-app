@@ -42,6 +42,8 @@ interface SwapCardProps {
   swapError?: string | null;
   transactionHash?: string | null;
   onResetSwap?: () => void;
+  // Estimating state
+  isEstimatingAfterSwap?: boolean;
 }
 
 export const SwapCard: React.FC<SwapCardProps> = ({
@@ -76,6 +78,8 @@ export const SwapCard: React.FC<SwapCardProps> = ({
   swapError,
   transactionHash,
   onResetSwap,
+  // Estimating state
+  isEstimatingAfterSwap = false,
 }) => {
 
   // Fetch balances for selected tokens
@@ -108,6 +112,7 @@ export const SwapCard: React.FC<SwapCardProps> = ({
           showPercentageButtons={true}
           percentageButtons={percentageButtons}
           onPercentageClick={(percentage) => onPercentageClick(percentage, fromTokenBalance.balance)}
+          disableSync={isEstimatingAfterSwap}
         />
 
         {/* Swap Direction with Separator */}
@@ -134,6 +139,8 @@ export const SwapCard: React.FC<SwapCardProps> = ({
           readOnly={true}
           onAmountChange={onToAmountChange}
           onTokenChange={onToTokenChange}
+          isEstimating={isEstimatingAfterSwap}
+          disableSync={isEstimatingAfterSwap}
         />
       </div>
 

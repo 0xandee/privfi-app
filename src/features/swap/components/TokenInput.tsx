@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { TokenSelector } from './TokenSelector';
 import { Token } from '@/constants/tokens';
 import { useInputValidation } from '@/shared/hooks';
@@ -21,6 +22,8 @@ interface TokenInputProps {
   showPercentageButtons?: boolean;
   percentageButtons?: number[];
   onPercentageClick?: (percentage: number) => void;
+  isEstimating?: boolean; // Show that the amount is an estimate while loading real quotes
+  disableSync?: boolean; // Temporarily disable syncing to prevent conflicts
 }
 
 export const TokenInput: React.FC<TokenInputProps> = ({
@@ -38,6 +41,8 @@ export const TokenInput: React.FC<TokenInputProps> = ({
   showPercentageButtons = false,
   percentageButtons = [],
   onPercentageClick,
+  isEstimating = false,
+  disableSync = false,
 }) => {
   const validation = useInputValidation(
     amount, 
@@ -104,13 +109,19 @@ export const TokenInput: React.FC<TokenInputProps> = ({
 
   // Sync validation value with amount prop when it changes (for programmatic updates)
   useEffect(() => {
-    // For read-only fields, always sync with the prop
-    if (readOnly && amount !== validation.value) {
+    // Skip syncing if disabled to prevent conflicts during swap direction
+    if (disableSync) {
+      console.log(`TokenInput (${label}) skipping sync - disabled`);
+      return;
+    }
+    
+    // Always sync when the amount prop changes and it's different from the validation value
+    // This ensures programmatic updates (like swap direction) work correctly
+    if (amount !== validation.value) {
+      console.log(`TokenInput (${label}) syncing amount:`, { amount, validationValue: validation.value });
       validation.setValue(amount);
     }
-    // For editable fields, don't sync to avoid overwriting user input
-    // The parent should be the source of truth via onAmountChange callbacks
-  }, [amount, readOnly, validation]);
+  }, [amount, label, disableSync]); // Only depend on amount to avoid infinite loops
 
   // Clear active percentage when user manually types or when token/balance changes
   useEffect(() => {
@@ -153,19 +164,28 @@ export const TokenInput: React.FC<TokenInputProps> = ({
 
       <div className="space-y-3">
         <div className="flex items-center gap-3">
-          <input
-            type="text"
-            value={validation.value}
-            onChange={readOnly ? undefined : handleInputChange}
-            onBlur={readOnly ? undefined : validation.handleBlur}
-            readOnly={readOnly}
-            className={`token-input flex-1 ${
-              validation.displayError ? 'border border-red-400/50 bg-red-400/5' : ''
-            } ${
-              readOnly ? 'cursor-default' : ''
-            }`}
-            placeholder={placeholder}
-          />
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={validation.value}
+              onChange={readOnly ? undefined : handleInputChange}
+              onBlur={readOnly ? undefined : validation.handleBlur}
+              readOnly={readOnly}
+              className={`token-input w-full ${
+                validation.displayError ? 'border border-red-400/50 bg-red-400/5' : ''
+              } ${
+                readOnly ? 'cursor-default' : ''
+              } ${
+                isEstimating ? 'pr-8' : ''
+              }`}
+              placeholder={placeholder}
+            />
+            {isEstimating && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              </div>
+            )}
+          </div>
           <TokenSelector
             selectedToken={selectedToken}
             onTokenChange={onTokenChange}

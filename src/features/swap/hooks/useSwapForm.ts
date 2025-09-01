@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 import { Token } from '@/shared/types';
 import { STARKNET_TOKENS, POPULAR_PAIRS, DEFAULT_TOKENS } from '@/constants/tokens';
 import { useSwapQuotes, useSwapEstimation } from './useSwapQuotes';
@@ -11,6 +12,8 @@ export const useSwapForm = (walletAddress?: string) => {
   const [toToken, setToToken] = useState<Token>(STARKNET_TOKENS.STRK);
   const [isUserInputting, setIsUserInputting] = useState(false);
   const [slippage, setSlippage] = useState(0.5);
+  const [isSwappingDirection, setIsSwappingDirection] = useState(false);
+  const [isEstimatingAfterSwap, setIsEstimatingAfterSwap] = useState(false);
 
   const percentageButtons = [25, 50, 75, 100];
 
@@ -70,16 +73,28 @@ export const useSwapForm = (walletAddress?: string) => {
     }
   };
 
+  // Debug effect to monitor toAmount changes
+  useEffect(() => {
+    console.log('toAmount state changed to:', toAmount);
+  }, [toAmount]);
+
   // Update toAmount when quotes change
   useEffect(() => {
     const outputAmount = swapEstimation.outputAmount;
     
+    // Don't override estimated amounts while swapping direction
+    if (isSwappingDirection) {
+      return;
+    }
+    
     if (outputAmount && fromAmount && parseFloat(fromAmount) > 0) {
       setToAmount(outputAmount);
+      setIsEstimatingAfterSwap(false); // Clear estimating flag when real quotes arrive
     } else if (!fromAmount || parseFloat(fromAmount) <= 0) {
       setToAmount('');
+      setIsEstimatingAfterSwap(false);
     }
-  }, [swapEstimation.outputAmount, fromAmount, swapEstimation]);
+  }, [swapEstimation.outputAmount, fromAmount, swapEstimation, isSwappingDirection]);
 
   // Reset user inputting flag after a delay
   useEffect(() => {
@@ -93,6 +108,12 @@ export const useSwapForm = (walletAddress?: string) => {
 
   // Enhanced token setters with auto-switching logic
   const handleFromTokenChange = useCallback((newToken: Token) => {
+    // Skip clearing amounts if we're in the middle of a direction swap
+    if (isSwappingDirection) {
+      setFromToken(newToken);
+      return;
+    }
+    
     if (newToken.address === toToken.address) {
       // Same token selected, auto-switch the to token
       const alternativeToken = getAlternativeToken(newToken, newToken);
@@ -102,9 +123,15 @@ export const useSwapForm = (walletAddress?: string) => {
     setFromAmount('');
     setToAmount('');
     setIsUserInputting(false);
-  }, [toToken.address, getAlternativeToken]);
+  }, [toToken.address, getAlternativeToken, isSwappingDirection]);
 
   const handleToTokenChange = useCallback((newToken: Token) => {
+    // Skip clearing amounts if we're in the middle of a direction swap
+    if (isSwappingDirection) {
+      setToToken(newToken);
+      return;
+    }
+    
     if (newToken.address === fromToken.address) {
       // Same token selected, auto-switch the from token
       const alternativeToken = getAlternativeToken(newToken, newToken);
@@ -114,7 +141,7 @@ export const useSwapForm = (walletAddress?: string) => {
     setFromAmount('');
     setToAmount('');
     setIsUserInputting(false);
-  }, [fromToken.address, getAlternativeToken]);
+  }, [fromToken.address, getAlternativeToken, isSwappingDirection]);
 
   // Handle from amount changes
   const handleFromAmountChange = useCallback((value: string) => {
@@ -124,16 +151,50 @@ export const useSwapForm = (walletAddress?: string) => {
 
   // Swap direction function
   const handleSwapDirection = useCallback(() => {
-    // Swap tokens
-    const tempToken = fromToken;
-    setFromToken(toToken);
-    setToToken(tempToken);
-
-    // Swap amounts
-    const tempAmount = fromAmount;
-    setFromAmount(toAmount);
-    setToAmount(tempAmount);
-  }, [fromToken, toToken, fromAmount, toAmount]);
+    // Store values before any state changes
+    const tempFromToken = fromToken;
+    const tempToToken = toToken;
+    const newFromAmount = toAmount || swapEstimation.outputAmount || '';
+    
+    // Calculate immediate reverse estimate using current exchange rate
+    let estimatedToAmount = '';
+    if (newFromAmount && swapQuotes.formattedQuote) {
+      try {
+        const sellAmountDecimal = swapQuotes.formattedQuote.sellAmountDecimal;
+        const buyAmountDecimal = swapQuotes.formattedQuote.buyAmountDecimal;
+        
+        if (sellAmountDecimal > 0 && buyAmountDecimal > 0) {
+          // Current exchange rate: buyAmount / sellAmount
+          const currentExchangeRate = buyAmountDecimal / sellAmountDecimal;
+          // Reverse estimate: newFromAmount / currentExchangeRate
+          const reverseAmount = parseFloat(newFromAmount) / currentExchangeRate;
+          estimatedToAmount = reverseAmount.toFixed(8).replace(/\.?0+$/, '');
+        }
+      } catch (error) {
+        console.warn('Failed to calculate reverse estimate:', error);
+      }
+    }
+    
+    // Use flushSync to ensure all updates happen synchronously
+    flushSync(() => {
+      setIsSwappingDirection(true);
+      setFromToken(tempToToken);
+      setToToken(tempFromToken);
+    });
+    
+    // Then set amounts in a separate flushSync to avoid conflicts
+    flushSync(() => {
+      setFromAmount(newFromAmount);
+      setToAmount(estimatedToAmount);
+      setIsUserInputting(true);
+      setIsEstimatingAfterSwap(!!estimatedToAmount);
+    });
+    
+    console.log('Set all states with flushSync:', { newFromAmount, estimatedToAmount });
+    
+    // Reset flag after a brief delay
+    setTimeout(() => setIsSwappingDirection(false), 100);
+  }, [fromToken, toToken, toAmount, swapEstimation.outputAmount, swapQuotes.formattedQuote]);
 
   // Check if current selection is valid (different tokens)
   const isValidTokenPair = fromToken.address !== toToken.address;
@@ -181,6 +242,7 @@ export const useSwapForm = (walletAddress?: string) => {
     isValidTokenPair,
     slippage,
     minReceived,
+    isEstimatingAfterSwap,
 
     // Quote data
     quotes: swapQuotes.quotes,

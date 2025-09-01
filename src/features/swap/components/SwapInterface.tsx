@@ -77,6 +77,8 @@ const SwapInterface = () => {
             swapError={swapForm.swapError}
             transactionHash={swapForm.transactionHash}
             onResetSwap={swapForm.resetSwap}
+            // Estimating state
+            isEstimatingAfterSwap={swapForm.isEstimatingAfterSwap}
           />
         </SwapErrorBoundary>
       </div>
