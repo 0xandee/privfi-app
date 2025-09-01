@@ -171,6 +171,10 @@
     min-height: 3rem;
   }
   
+  .slippage-selector {
+    @apply flex items-center gap-2 px-3 py-2 bg-token-selector rounded-lg hover:bg-token-selector-hover transition-colors cursor-pointer;
+  }
+  
   .percentage-button {
     @apply px-3 py-1.5 bg-percentage-button text-muted-foreground rounded-md hover:bg-percentage-button-hover transition-colors cursor-pointer text-sm font-medium;
   }

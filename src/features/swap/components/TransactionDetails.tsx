@@ -108,7 +108,7 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
       <div className="transaction-detail">
         <span className="transaction-detail-label">Slippage</span>
         <Select value={slippage.toString()} onValueChange={(value) => handleSlippageClick(parseFloat(value))}>
-          <SelectTrigger className="token-selector w-24 border-0 focus:ring-0 shadow-none !bg-token-selector">
+          <SelectTrigger className="slippage-selector w-[5.5rem] h-8 border-0 focus:ring-0 shadow-none !bg-token-selector">
             <span className="font-medium">{slippage}%</span>
           </SelectTrigger>
           <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
