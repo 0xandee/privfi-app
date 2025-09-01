@@ -1,6 +1,7 @@
 export interface ValidationResult {
   isValid: boolean;
   error?: string;
+  warning?: string;
   sanitizedValue?: string;
 }
 
@@ -51,13 +52,13 @@ export const validateTokenInput = (
     };
   }
   
-  // Check against maximum balance
+  // Check against maximum balance - use warning instead of error to allow quotes
   if (maxBalance) {
     const maxBalanceNum = parseFloat(maxBalance);
     if (num > maxBalanceNum) {
       return { 
-        isValid: false, 
-        error: 'Amount exceeds available balance',
+        isValid: true, 
+        warning: 'Amount exceeds available balance',
         sanitizedValue: normalizedInput
       };
     }

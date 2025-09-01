@@ -262,6 +262,9 @@ export const formatQuoteForDisplay = (
   if (!quote || !quote.sellAmount || !quote.buyAmount) {
     return {
       exchangeRate: `1 ${fromTokenSymbol} = 0 ${toTokenSymbol}`,
+      exchangeRateWithUsd: `1 ${fromTokenSymbol} = 0 ${toTokenSymbol} ($0.00)`,
+      sellTokenPrice: 0,
+      buyTokenPrice: 0,
       priceImpact: '0.0000%',
       integratorFee: '$0.000',
       avnuFee: '$0.000',
@@ -282,6 +285,20 @@ export const formatQuoteForDisplay = (
   // Calculate exchange rate: how many toTokens per 1 fromToken
   const exchangeRate = sellAmountDecimal > 0 ? buyAmountDecimal / sellAmountDecimal : 0;
 
+  // Format exchange rate with appropriate precision
+  const formatExchangeRate = (rate: number): string => {
+    if (rate === 0) return '0';
+    if (rate >= 1) return rate.toFixed(2);
+    if (rate >= 0.0001) return rate.toFixed(6);
+    if (rate >= 0.000001) return rate.toFixed(8);
+    return rate.toFixed(10);
+  };
+
+  // Calculate USD value for 1 unit of sell token
+  const sellTokenPriceInUsd = quote.sellTokenPriceInUsd || 0;
+  const buyTokenPriceInUsd = quote.buyTokenPriceInUsd || 0;
+  const usdValueFor1Unit = exchangeRate * buyTokenPriceInUsd;
+
   // Calculate price impact from slippage
   const priceImpact = (quote.estimatedSlippage || 0) * 100;
 
@@ -291,7 +308,10 @@ export const formatQuoteForDisplay = (
   const sellAmountUsd = quote.sellAmountInUsd || 0;
   
   return {
-    exchangeRate: `1 ${fromTokenSymbol} = ${exchangeRate.toFixed(2)} ${toTokenSymbol}`,
+    exchangeRate: `1 ${fromTokenSymbol} = ${formatExchangeRate(exchangeRate)} ${toTokenSymbol}`,
+    exchangeRateWithUsd: `1 ${fromTokenSymbol} = ${formatExchangeRate(exchangeRate)} ${toTokenSymbol} ($${usdValueFor1Unit.toFixed(2)})`,
+    sellTokenPrice: sellTokenPriceInUsd,
+    buyTokenPrice: buyTokenPriceInUsd,
     priceImpact: `${priceImpact.toFixed(4)}%`,
     integratorFee: `$${integratorFee.toFixed(3)}`,
     avnuFee: `$${avnuFee.toFixed(3)}`,
@@ -347,7 +367,12 @@ export const extractTokenPricesFromQuote = (
     return variants;
   };
 
-  const result: { [address: string]: any } = {};
+  const result: { [address: string]: {
+    address: string;
+    priceInUSD: number;
+    priceInETH: number;
+    decimals: number;
+  } } = {};
   
   // Add sell token price with all address variants
   const sellTokenPrice = quote.sellTokenPriceInUsd || 0;

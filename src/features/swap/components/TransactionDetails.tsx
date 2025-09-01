@@ -5,6 +5,7 @@ import { Info } from 'lucide-react';
 
 interface TransactionDetailsProps {
   rate?: string;
+  rateWithUsd?: string;
   integratorFee?: string;
   integratorFeesBps?: string;
   avnuFee?: string;
@@ -17,6 +18,7 @@ interface TransactionDetailsProps {
 
 export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
   rate = "0",
+  rateWithUsd,
   integratorFee = "$0.00",
   integratorFeesBps = "0",
   avnuFee = "$0.00", 
@@ -69,7 +71,16 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
     <div className="crypto-card px-4 py-6 mt-6 space-y-4">
       <div className="transaction-detail">
         <span className="transaction-detail-label">Rate</span>
-        <span className="transaction-detail-value">{rate}</span>
+        <span className="transaction-detail-value">
+          {rateWithUsd ? (
+            <>
+              {rateWithUsd.split(' (')[0]}{' '}
+              <span className="text-transaction-detail">({rateWithUsd.split(' (')[1]}</span>
+            </>
+          ) : (
+            rate
+          )}
+        </span>
       </div>
 
       <div className="transaction-detail">

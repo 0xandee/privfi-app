@@ -3,9 +3,10 @@ import { Loader2 } from 'lucide-react';
 import { TokenSelector } from './TokenSelector';
 import { Token } from '@/constants/tokens';
 import { useInputValidation } from '@/shared/hooks';
-import { useTokenPrice, TokenPrice } from '@/shared/hooks/useTokenPrices';
+import { TokenPrice } from '@/shared/hooks/useTokenPrices';
 import { getTokenUSDDisplay } from '@/shared/utils/priceUtils';
 import { ErrorMessage } from '@/shared/components/ui/error-message';
+import { WarningMessage } from '@/shared/components/ui/warning-message';
 
 interface TokenInputProps {
   label: string;
@@ -77,17 +78,10 @@ export const TokenInput: React.FC<TokenInputProps> = ({
   };
   
   const priceFromData = findPriceInData(priceData, selectedToken.address);
-  // Fetch individual prices if we don't have price data from quotes
-  // Always fetch if we need a price but don't have one from priceData
-  const shouldSkipIndividualFetch = !!priceFromData;
   
-  
-  const { price: fetchedPrice, isLoading: isPriceLoading } = useTokenPrice(
-    shouldSkipIndividualFetch ? '' : selectedToken.address
-  );
-  
-  const price = priceFromData?.priceInUSD || fetchedPrice;
-  const isLoading = shouldSkipIndividualFetch ? false : isPriceLoading;
+  // Use only the centralized price data - no individual fetching
+  const price = priceFromData?.priceInUSD || 0;
+  const isLoading = false;
 
 
   // Calculate USD value display
@@ -121,7 +115,7 @@ export const TokenInput: React.FC<TokenInputProps> = ({
       console.log(`TokenInput (${label}) syncing amount:`, { amount, validationValue: validation.value });
       validation.setValue(amount);
     }
-  }, [amount, label, disableSync]); // Only depend on amount to avoid infinite loops
+  }, [amount, label, disableSync, validation.setValue]); // Include validation.setValue
 
   // Clear active percentage when user manually types or when token/balance changes
   useEffect(() => {
@@ -134,6 +128,13 @@ export const TokenInput: React.FC<TokenInputProps> = ({
   useEffect(() => {
     setActivePercentage(null);
   }, [selectedToken.address, balance]);
+
+  // Notify parent of validation value changes (but not during sync)
+  useEffect(() => {
+    if (!disableSync && validation.value !== amount && validation.isTouched) {
+      onAmountChange(validation.value);
+    }
+  }, [validation.value, validation.isTouched, disableSync, amount, onAmountChange]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     validation.handleChange(e.target.value);
@@ -192,7 +193,7 @@ export const TokenInput: React.FC<TokenInputProps> = ({
           />
         </div>
 
-        {/* Error Message */}
+        {/* Error Messages Only - Balance warnings shown in swap button */}
         {validation.displayError && (
           <ErrorMessage message={validation.displayError} />
         )}

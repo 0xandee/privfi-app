@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ArrowUpDown, RefreshCw } from 'lucide-react';
 import { TokenInput } from './TokenInput';
 import { TransactionDetails } from './TransactionDetails';
 import { Button } from '@/shared/components/ui/button';
 import { Token } from '@/constants/tokens';
-import { useTokenBalance, useTokenPrices } from '@/shared/hooks';
+import { useTokenBalance } from '@/shared/hooks';
 import { ErrorMessage } from '@/shared/components/ui/error-message';
 import { AVNUQuote, formatQuoteForDisplay, extractTokenPricesFromQuote } from '../services/avnu';
 
@@ -86,11 +86,19 @@ export const SwapCard: React.FC<SwapCardProps> = ({
   const fromTokenBalance = useTokenBalance(fromToken, walletAddress);
   const toTokenBalance = useTokenBalance(toToken, walletAddress);
 
-  // Use token prices from AVNU quotes when available
-  // Don't fetch fallback prices - quotes provide all the price data we need
+  // Only use token prices from AVNU quotes - no standalone price fetching needed
+  // Prices are only displayed when user enters amounts, and quotes provide all needed price data
   const tokenPrices = selectedQuote
     ? extractTokenPricesFromQuote(selectedQuote, fromToken.decimals, toToken.decimals)
     : undefined;
+
+  // Check if the from amount exceeds available balance
+  const exceedsBalance = useMemo(() => {
+    if (!fromAmount || !fromTokenBalance.rawFormatted) return false;
+    const inputAmount = parseFloat(fromAmount);
+    const availableBalance = parseFloat(fromTokenBalance.rawFormatted);
+    return inputAmount > availableBalance;
+  }, [fromAmount, fromTokenBalance.rawFormatted]);
 
 
 
@@ -160,6 +168,7 @@ export const SwapCard: React.FC<SwapCardProps> = ({
           {formattedQuote && selectedQuote && !quotesError && (
             <TransactionDetails
               rate={formattedQuote.exchangeRate}
+              rateWithUsd={formattedQuote.exchangeRateWithUsd}
               integratorFee={formattedQuote.integratorFee}
               integratorFeesBps={selectedQuote.integratorFeesBps}
               avnuFee={formattedQuote.avnuFee}
@@ -186,7 +195,7 @@ export const SwapCard: React.FC<SwapCardProps> = ({
       {/* Swap Button */}
       <div className="mt-6 space-y-3">
         <Button
-          className={`swap-button ${(!isValidTokenPair || isQuoteExpired || (quotesError && fromAmount && parseFloat(fromAmount) > 0) || isExecutingSwap) ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`swap-button ${(!isValidTokenPair || isQuoteExpired || (quotesError && fromAmount && parseFloat(fromAmount) > 0) || isExecutingSwap || exceedsBalance) ? 'opacity-50 cursor-not-allowed' : ''}`}
           onClick={onSwap}
           disabled={
             !isValidTokenPair ||
@@ -195,11 +204,13 @@ export const SwapCard: React.FC<SwapCardProps> = ({
             (fromAmount && parseFloat(fromAmount) > 0 && isValidTokenPair && !selectedQuote && !isLoadingQuotes) ||
             isQuoteExpired ||
             (quotesError && fromAmount && parseFloat(fromAmount) > 0) ||
-            isExecutingSwap
+            isExecutingSwap ||
+            exceedsBalance
           }
         >
           {(() => {
             if (!isValidTokenPair) return 'Select Different Tokens';
+            if (exceedsBalance) return `Insufficient ${fromToken.symbol} Balance`;
             if (isQuoteExpired) return 'Quote Expired - Refresh';
             if (quotesError && fromAmount && parseFloat(fromAmount) > 0) return 'Quote Error';
             if (isExecutingSwap) return (

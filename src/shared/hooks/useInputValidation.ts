@@ -5,6 +5,7 @@ import { Token } from '@/constants/tokens';
 export interface InputValidationState {
   value: string;
   error: string | null;
+  warning: string | null;
   isValid: boolean;
   isTouched: boolean;
 }
@@ -17,6 +18,7 @@ export const useInputValidation = (
   const [state, setState] = useState<InputValidationState>({
     value: initialValue,
     error: null,
+    warning: null,
     isValid: true,
     isTouched: false
   });
@@ -36,6 +38,7 @@ export const useInputValidation = (
     setState(prev => ({
       value: validation.sanitizedValue || sanitizedInput,
       error: validation.error || null,
+      warning: validation.warning || null,
       isValid: validation.isValid,
       isTouched: true
     }));
@@ -49,6 +52,7 @@ export const useInputValidation = (
     setState({
       value: '',
       error: null,
+      warning: null,
       isValid: true,
       isTouched: false
     });
@@ -59,6 +63,7 @@ export const useInputValidation = (
     setState({
       value: validation.sanitizedValue || value,
       error: validation.error || null,
+      warning: validation.warning || null,
       isValid: validation.isValid,
       isTouched: false // Don't show error immediately when programmatically set
     });
@@ -68,6 +73,11 @@ export const useInputValidation = (
   const displayError = useMemo(() =>
     state.isTouched && !state.isValid ? state.error : null
     , [state.isTouched, state.isValid, state.error]);
+
+  // Show warning only if the input has been touched and has a warning
+  const displayWarning = useMemo(() =>
+    state.isTouched && state.warning ? state.warning : null
+    , [state.isTouched, state.warning]);
 
   // Check if amount exceeds balance specifically
   const exceedsBalance = useMemo(() => {
@@ -80,6 +90,7 @@ export const useInputValidation = (
   return {
     ...state,
     displayError,
+    displayWarning,
     exceedsBalance,
     handleChange,
     handleBlur,

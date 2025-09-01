@@ -39,9 +39,10 @@ export const useSwapQuotes = ({
   const [selectedQuote, setSelectedQuote] = useState<AVNUQuote | null>(null);
   const [timeToExpiry, setTimeToExpiry] = useState(0);
 
-  // Create query key for caching
+  // Create query key for caching - add version to force cache invalidation
   const queryKey = useMemo(() => [
     'swapQuotes',
+    'v2', // Version bump to clear old cached errors
     fromToken.address,
     toToken.address,
     fromAmount,
@@ -61,9 +62,30 @@ export const useSwapQuotes = ({
   const quoteParams: QuoteRequest = {
     sellToken: fromToken,
     buyToken: toToken,
-    sellAmount: fromAmount ? (parseFloat(fromAmount) * Math.pow(10, fromToken.decimals)).toString() : undefined,
+    sellAmount: fromAmount ? convertToSmallestUnit(fromAmount, fromToken.decimals) : undefined,
     takerAddress: walletAddress,
   };
+
+  // Helper function to safely convert decimal amount to smallest unit using BigInt
+  function convertToSmallestUnit(amount: string, decimals: number): string {
+    try {
+      // Split the amount into integer and decimal parts
+      const [integerPart, decimalPart = ''] = amount.split('.');
+      
+      // Pad or truncate decimal part to match token decimals
+      const paddedDecimalPart = decimalPart.padEnd(decimals, '0').slice(0, decimals);
+      
+      // Combine integer and decimal parts
+      const fullNumberString = integerPart + paddedDecimalPart;
+      
+      // Convert to BigInt and then back to string
+      return BigInt(fullNumberString).toString();
+    } catch (error) {
+      console.error('Error converting amount to smallest unit:', error);
+      // Fallback to original method for backwards compatibility
+      return (parseFloat(amount) * Math.pow(10, decimals)).toString();
+    }
+  }
 
   // Fetch quotes using React Query - get raw AVNU quotes
   const {
