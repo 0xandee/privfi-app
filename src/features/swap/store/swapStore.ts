@@ -17,6 +17,12 @@ interface SwapState {
   isLoadingQuotes: boolean;
   quotesError: string | null;
   
+  // Privacy configuration
+  privacy: {
+    recipientAddress: string;
+    isEnabled: boolean; // Always true by default for private swaps
+  };
+  
   // Settings
   settings: {
     defaultSlippage: number;
@@ -39,6 +45,10 @@ interface SwapActions {
   setQuotesLoading: (loading: boolean) => void;
   setQuotesError: (error: string | null) => void;
   
+  // Privacy actions
+  setRecipientAddress: (address: string) => void;
+  setPrivacyEnabled: (enabled: boolean) => void;
+  
   // Utility actions
   swapTokens: () => void;
   resetForm: () => void;
@@ -60,6 +70,11 @@ const initialState: SwapState = {
   selectedQuote: null,
   isLoadingQuotes: false,
   quotesError: null,
+  
+  privacy: {
+    recipientAddress: '',
+    isEnabled: true, // Always enabled for private swaps
+  },
   
   settings: {
     defaultSlippage: 0.5,
@@ -86,6 +101,14 @@ export const useSwapStore = create<SwapStore>()(
         setSelectedQuote: (quote) => set({ selectedQuote: quote }),
         setQuotesLoading: (loading) => set({ isLoadingQuotes: loading }),
         setQuotesError: (error) => set({ quotesError: error }),
+        
+        // Privacy actions
+        setRecipientAddress: (address) => set((state) => ({
+          privacy: { ...state.privacy, recipientAddress: address }
+        })),
+        setPrivacyEnabled: (enabled) => set((state) => ({
+          privacy: { ...state.privacy, isEnabled: enabled }
+        })),
         
         // Utility actions
         swapTokens: () => {
@@ -117,6 +140,7 @@ export const useSwapStore = create<SwapStore>()(
           fromToken: state.fromToken,
           toToken: state.toToken,
           slippage: state.slippage,
+          privacy: state.privacy,
           settings: state.settings,
         }),
       }

@@ -2,6 +2,7 @@ import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/shared/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip';
 import { Info } from 'lucide-react';
+import { PrivacyConfig } from './PrivacyConfig';
 
 interface TransactionDetailsProps {
   rate?: string;
@@ -14,6 +15,7 @@ interface TransactionDetailsProps {
   slippage?: number;
   onSlippageChange?: (slippage: number) => void;
   toTokenSymbol?: string;
+  walletAddress?: string;
 }
 
 export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
@@ -27,6 +29,7 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
   slippage = 0.5,
   onSlippageChange,
   toTokenSymbol = "",
+  walletAddress,
 }) => {
 
   const presetSlippages = [0, 0.1, 0.5, 1];
@@ -68,69 +71,76 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
   };
 
   return (
-    <div className="crypto-card px-4 py-6 mt-6 space-y-4">
-      <div className="transaction-detail">
-        <span className="transaction-detail-label">Rate</span>
-        <span className="transaction-detail-value">
-          {rateWithUsd ? (
-            <>
-              {rateWithUsd.split(' (')[0]}{' '}
-              <span className="text-transaction-detail">({rateWithUsd.split(' (')[1]}</span>
-            </>
-          ) : (
-            rate
-          )}
-        </span>
-      </div>
+    <>
+      <div className="crypto-card px-4 py-6 mt-6 space-y-4">
+        <div className="transaction-detail">
+          <span className="transaction-detail-label">Rate</span>
+          <span className="transaction-detail-value">
+            {rateWithUsd ? (
+              <>
+                {rateWithUsd.split(' (')[0]}{' '}
+                <span className="text-transaction-detail">({rateWithUsd.split(' (')[1]}</span>
+              </>
+            ) : (
+              rate
+            )}
+          </span>
+        </div>
 
-      <div className="transaction-detail">
-        <Tooltip delayDuration={200}>
-          <TooltipTrigger asChild>
-            <span className="transaction-detail-label flex items-center gap-1 cursor-pointer">
-              Platform Fees ({totalFeesPercentage}%)
-              <Info className="h-3 w-3 text-gray-400" />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent side="top" className="w-32">
-            <div className="space-y-1 text-xs">
-              <div className="flex justify-between">
-                <span>Privfi</span>
-                <span>0.15%</span>
+        <div className="transaction-detail">
+          <Tooltip delayDuration={200}>
+            <TooltipTrigger asChild>
+              <span className="transaction-detail-label flex items-center gap-1 cursor-pointer">
+                Platform Fees ({totalFeesPercentage}%)
+                <Info className="h-3 w-3 text-gray-400" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="w-32">
+              <div className="space-y-1 text-xs">
+                <div className="flex justify-between">
+                  <span>Privfi</span>
+                  <span>0.15%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>AVNU</span>
+                  <span>{(avnuBpsValue / 100).toFixed(2)}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Typhoon</span>
+                  <span>0.50%</span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span>AVNU</span>
-                <span>{(avnuBpsValue / 100).toFixed(2)}%</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Typhoon</span>
-                <span>0.50%</span>
-              </div>
-            </div>
-          </TooltipContent>
-        </Tooltip>
-        <span className="transaction-detail-value">${totalFeeAmount}</span>
-      </div>
+            </TooltipContent>
+          </Tooltip>
+          <span className="transaction-detail-value">${totalFeeAmount}</span>
+        </div>
 
-      <div className="transaction-detail">
-        <span className="transaction-detail-label">Min Received</span>
-        <span className="transaction-detail-value">{minReceived} {toTokenSymbol}</span>
-      </div>
+        <div className="transaction-detail">
+          <span className="transaction-detail-label">Min Received</span>
+          <span className="transaction-detail-value">{minReceived} {toTokenSymbol}</span>
+        </div>
 
-      <div className="transaction-detail">
-        <span className="transaction-detail-label">Slippage</span>
-        <Select value={slippage.toString()} onValueChange={(value) => handleSlippageClick(parseFloat(value))}>
-          <SelectTrigger className="slippage-selector w-[5.5rem] h-8 border-0 focus:ring-0 shadow-none !bg-token-selector">
-            <span className="font-medium">{slippage}%</span>
-          </SelectTrigger>
-          <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
-            {presetSlippages.map((preset) => (
-              <SelectItem key={preset} value={preset.toString()} className="cursor-pointer [&>span:first-child]:hidden pl-3">
-                <span className="font-medium">{preset}%</span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="transaction-detail">
+          <span className="transaction-detail-label">Slippage</span>
+          <Select value={slippage.toString()} onValueChange={(value) => handleSlippageClick(parseFloat(value))}>
+            <SelectTrigger className="slippage-selector w-[5.5rem] h-8 border-0 focus:ring-0 shadow-none !bg-token-selector">
+              <span className="font-medium">{slippage}%</span>
+            </SelectTrigger>
+            <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
+              {presetSlippages.map((preset) => (
+                <SelectItem key={preset} value={preset.toString()} className="cursor-pointer [&>span:first-child]:hidden pl-3">
+                  <span className="font-medium">{preset}%</span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-    </div>
+      
+      {/* Privacy Configuration */}
+      <div className="mt-4">
+        <PrivacyConfig walletAddress={walletAddress} />
+      </div>
+    </>
   );
 };

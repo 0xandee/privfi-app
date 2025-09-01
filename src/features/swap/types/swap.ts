@@ -18,4 +18,6 @@ export interface SwapExecutionState {
   isError: boolean;
   error: string | null;
   transactionHash: string | null;
+  isPrivateSwap?: boolean;
+  withdrawalStatus?: 'pending' | 'completed' | 'failed';
 }

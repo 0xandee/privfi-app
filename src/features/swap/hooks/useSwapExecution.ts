@@ -5,11 +5,13 @@ import { toast } from '@/shared/components/ui/sonner';
 import { ExternalLink } from 'lucide-react';
 import { AVNUService } from '../services/avnu';
 import { AVNUQuote } from '../services/avnu';
+import { TyphoonService } from '../services/typhoon';
 import { SwapExecutionState } from '../types/swap';
 
 export interface UseSwapExecutionParams {
   selectedQuote: AVNUQuote | null;
   slippage: number;
+  recipientAddress?: string; // For private swaps
 }
 
 export interface UseSwapExecutionResult extends SwapExecutionState {
@@ -20,6 +22,7 @@ export interface UseSwapExecutionResult extends SwapExecutionState {
 export const useSwapExecution = ({
   selectedQuote,
   slippage,
+  recipientAddress,
 }: UseSwapExecutionParams): UseSwapExecutionResult => {
   const { address } = useAccount();
   const [executionState, setExecutionState] = useState<SwapExecutionState>({
@@ -31,6 +34,7 @@ export const useSwapExecution = ({
   });
 
   const avnuService = useMemo(() => new AVNUService(), []);
+  const typhoonService = useMemo(() => new TyphoonService(), []);
   const toastShownRef = useRef<string | null>(null);
   const errorToastShownRef = useRef<string | null>(null);
 
@@ -43,6 +47,41 @@ export const useSwapExecution = ({
   } = useSendTransaction({
     calls: undefined, // Will be set dynamically
   });
+
+  const handlePrivateWithdrawal = useCallback(async (txHash: string) => {
+    try {
+      // Use recipient address if provided, otherwise use wallet address
+      const recipient = recipientAddress || address;
+      if (!recipient) {
+        throw new Error('No recipient address available for withdrawal');
+      }
+
+      await typhoonService.withdraw({
+        transactionHash: txHash,
+        recipientAddresses: [recipient],
+      });
+
+      setExecutionState(prev => ({
+        ...prev,
+        withdrawalStatus: 'completed',
+      }));
+
+      toast.success('Private withdrawal completed!', {
+        duration: 5000,
+      });
+    } catch (error) {
+      console.error('Withdrawal failed:', error);
+      setExecutionState(prev => ({
+        ...prev,
+        withdrawalStatus: 'failed',
+      }));
+
+      toast.error('Withdrawal failed!', {
+        description: error instanceof Error ? error.message : 'Unknown withdrawal error',
+        duration: 8000,
+      });
+    }
+  }, [typhoonService, recipientAddress, address]);
 
   // Update execution state based on transaction status
   useEffect(() => {
@@ -64,7 +103,7 @@ export const useSwapExecution = ({
           error: null,
         }));
         break;
-      case 'success':
+      case 'success': {
         const txHash = transactionData?.transaction_hash || null;
         setExecutionState(prev => ({
           ...prev,
@@ -73,12 +112,18 @@ export const useSwapExecution = ({
           isError: false,
           error: null,
           transactionHash: txHash,
+          withdrawalStatus: 'pending',
         }));
+        
+        // For private swaps, initiate withdrawal after transaction confirmation
+        if (txHash && executionState.isPrivateSwap) {
+          handlePrivateWithdrawal(txHash);
+        }
         
         // Show success toast (only once per transaction)
         if (txHash && toastShownRef.current !== txHash) {
           toastShownRef.current = txHash;
-          toast.success('Swap successful!', {
+          toast.success(executionState.isPrivateSwap ? 'Private swap successful! Completing withdrawal...' : 'Swap successful!', {
             duration: 8000, // 8 seconds
             action: {
               label: React.createElement('span', { className: 'flex items-center gap-1' }, [
@@ -90,7 +135,8 @@ export const useSwapExecution = ({
           });
         }
         break;
-      case 'error':
+      }
+      case 'error': {
         const errorMessage = transactionError?.message || 'Transaction failed';
         setExecutionState(prev => ({
           ...prev,
@@ -110,8 +156,9 @@ export const useSwapExecution = ({
           });
         }
         break;
+      }
     }
-  }, [status, transactionData, transactionError, executionState.isLoading]);
+  }, [status, transactionData, transactionError, executionState.isLoading, executionState.isPrivateSwap, handlePrivateWithdrawal]);
 
   const executeSwap = useCallback(async () => {
     if (!selectedQuote) {
@@ -170,8 +217,23 @@ export const useSwapExecution = ({
         throw new Error('No transaction calls received from build response');
       }
 
-      // Execute the multicall transaction
-      sendTransaction(buildResponse.calls);
+      // Generate Typhoon private swap calls (deposit calls)
+      const depositCalls = await typhoonService.generateApproveAndDepositCalls(
+        selectedQuote.buyAmount,
+        selectedQuote.buyTokenAddress
+      );
+
+      // Combine AVNU swap calls with Typhoon deposit calls for private swap
+      const allCalls = [...buildResponse.calls, ...depositCalls];
+
+      // Set private swap state
+      setExecutionState(prev => ({
+        ...prev,
+        isPrivateSwap: true,
+      }));
+
+      // Execute the multicall transaction (swap + deposit)
+      sendTransaction(allCalls);
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to execute swap';
@@ -190,7 +252,7 @@ export const useSwapExecution = ({
         });
       }
     }
-  }, [selectedQuote, address, slippage, avnuService, sendTransaction]);
+  }, [selectedQuote, address, slippage, avnuService, typhoonService, sendTransaction]);
 
   const reset = useCallback(() => {
     setExecutionState({

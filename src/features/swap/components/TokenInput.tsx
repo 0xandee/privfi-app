@@ -113,7 +113,6 @@ export const TokenInput: React.FC<TokenInputProps> = ({
     // Always sync when the amount prop changes and it's different from the validation value
     // This ensures programmatic updates (like swap direction) work correctly
     if (amount !== validation.value) {
-      console.log(`TokenInput (${label}) syncing amount:`, { amount, validationValue: validation.value });
       validation.setValue(amount);
     }
   }, [amount, label, disableSync, validation.setValue]); // Include validation.setValue

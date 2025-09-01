@@ -177,6 +177,7 @@ export const SwapCard: React.FC<SwapCardProps> = ({
               slippage={slippage}
               onSlippageChange={onSlippageChange}
               toTokenSymbol={toToken.symbol}
+              walletAddress={walletAddress}
             />
           )}
         </>

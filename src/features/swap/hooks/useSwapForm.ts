@@ -4,9 +4,13 @@ import { Token } from '@/shared/types';
 import { STARKNET_TOKENS, POPULAR_PAIRS, DEFAULT_TOKENS } from '@/constants/tokens';
 import { useSwapQuotes, useSwapEstimation } from './useSwapQuotes';
 import { useSwapExecution } from './useSwapExecution';
+import { useSwapStore } from '../store/swapStore';
 import { formatTokenAmountDisplay } from '@/shared/utils/lib/inputValidation';
 
 export const useSwapForm = (walletAddress?: string) => {
+  // Get privacy config from store
+  const { privacy } = useSwapStore();
+  
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
   const [fromToken, setFromToken] = useState<Token>(STARKNET_TOKENS.ETH);
@@ -33,10 +37,11 @@ export const useSwapForm = (walletAddress?: string) => {
     walletAddress,
   });
 
-  // Swap execution hook
+  // Swap execution hook with privacy configuration
   const swapExecution = useSwapExecution({
     selectedQuote: swapQuotes.selectedQuote,
     slippage,
+    recipientAddress: privacy.recipientAddress || undefined,
   });
 
   // Get a suitable alternative token when same token is selected
@@ -74,10 +79,6 @@ export const useSwapForm = (walletAddress?: string) => {
     }
   };
 
-  // Debug effect to monitor toAmount changes
-  useEffect(() => {
-    console.log('toAmount state changed to:', toAmount);
-  }, [toAmount]);
 
   // Update toAmount when quotes change
   useEffect(() => {
@@ -190,8 +191,6 @@ export const useSwapForm = (walletAddress?: string) => {
       setIsUserInputting(true);
       setIsEstimatingAfterSwap(!!estimatedToAmount);
     });
-    
-    console.log('Set all states with flushSync:', { newFromAmount, estimatedToAmount });
     
     // Reset flag after a brief delay
     setTimeout(() => setIsSwappingDirection(false), 100);

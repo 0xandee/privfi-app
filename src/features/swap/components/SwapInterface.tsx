@@ -16,7 +16,7 @@ const SwapInterface = () => {
     <div className="min-h-screen bg-background p-4 flex flex-col items-center justify-center">
       <div className="w-full max-w-lg bg-[#1C1C1C] rounded-xl p-6">
         <div className="flex items-center justify-between mb-6">
-          <span className="text-lg font-medium text-white">Privacy Swap</span>
+          <span className="text-lg font-medium text-white">Private Swap</span>
           <div className="flex items-center">
             <WalletConnectionButton
               isConnected={walletConnection.isConnected}
