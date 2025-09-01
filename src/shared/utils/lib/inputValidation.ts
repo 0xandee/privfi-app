@@ -112,3 +112,18 @@ export const formatNumberWithCommas = (value: string): string => {
   
   return parts.length > 1 ? `${integerPart}.${parts[1]}` : integerPart;
 };
+
+export const formatTokenAmountDisplay = (amount: number, maxDecimals: number = 6): string => {
+  if (amount === 0) return '0';
+  
+  // For very small numbers, use scientific notation threshold
+  if (amount > 0 && amount < 0.000001) {
+    return amount.toExponential(2);
+  }
+  
+  // Format with max decimals, then remove trailing zeros
+  const formatted = amount.toFixed(maxDecimals);
+  
+  // Remove trailing zeros after decimal point, but keep at least one decimal if there was one
+  return formatted.replace(/\.?0+$/, '');
+};

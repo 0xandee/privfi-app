@@ -4,6 +4,7 @@ import { Token } from '@/shared/types';
 import { STARKNET_TOKENS, POPULAR_PAIRS, DEFAULT_TOKENS } from '@/constants/tokens';
 import { useSwapQuotes, useSwapEstimation } from './useSwapQuotes';
 import { useSwapExecution } from './useSwapExecution';
+import { formatTokenAmountDisplay } from '@/shared/utils/lib/inputValidation';
 
 export const useSwapForm = (walletAddress?: string) => {
   const [fromAmount, setFromAmount] = useState('');
@@ -69,7 +70,7 @@ export const useSwapForm = (walletAddress?: string) => {
     const balanceNum = parseFloat(balance);
     if (balanceNum > 0) {
       const amount = (balanceNum * percentage) / 100;
-      setFromAmount(amount.toFixed(6));
+      setFromAmount(formatTokenAmountDisplay(amount, 6));
     }
   };
 
@@ -168,7 +169,7 @@ export const useSwapForm = (walletAddress?: string) => {
           const currentExchangeRate = buyAmountDecimal / sellAmountDecimal;
           // Reverse estimate: newFromAmount / currentExchangeRate
           const reverseAmount = parseFloat(newFromAmount) / currentExchangeRate;
-          estimatedToAmount = reverseAmount.toFixed(8).replace(/\.?0+$/, '');
+          estimatedToAmount = formatTokenAmountDisplay(reverseAmount, 8);
         }
       } catch (error) {
         console.warn('Failed to calculate reverse estimate:', error);
@@ -205,7 +206,7 @@ export const useSwapForm = (walletAddress?: string) => {
     const amountNum = parseFloat(amount);
     // Apply slippage to the amount (which already has Typhoon fee deducted)
     const minReceived = amountNum * (1 - slippagePercent / 100);
-    return minReceived.toFixed(8).replace(/\.?0+$/, '');
+    return formatTokenAmountDisplay(minReceived, 8);
   }, []);
 
   const minReceived = calculateMinReceived(toAmount, slippage);

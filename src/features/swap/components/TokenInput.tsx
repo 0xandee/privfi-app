@@ -5,6 +5,7 @@ import { Token } from '@/constants/tokens';
 import { useInputValidation } from '@/shared/hooks';
 import { TokenPrice } from '@/shared/hooks/useTokenPrices';
 import { getTokenUSDDisplay } from '@/shared/utils/priceUtils';
+import { formatTokenAmountDisplay } from '@/shared/utils/lib/inputValidation';
 import { ErrorMessage } from '@/shared/components/ui/error-message';
 import { WarningMessage } from '@/shared/components/ui/warning-message';
 
@@ -144,9 +145,9 @@ export const TokenInput: React.FC<TokenInputProps> = ({
     if (balance && parseFloat(balance) > 0) {
       const balanceNum = parseFloat(balance);
       const amount = (balanceNum * percentage) / 100;
-      // Format to appropriate decimals based on token
+      // Format to appropriate decimals based on token, removing trailing zeros
       const maxDisplayDecimals = selectedToken.decimals > 6 ? 6 : selectedToken.decimals;
-      const formattedAmount = amount.toFixed(maxDisplayDecimals);
+      const formattedAmount = formatTokenAmountDisplay(amount, maxDisplayDecimals);
       validation.setValue(formattedAmount);
       setActivePercentage(percentage); // Set active percentage for visual feedback
     }
