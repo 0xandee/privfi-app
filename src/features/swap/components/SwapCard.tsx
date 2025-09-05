@@ -106,7 +106,7 @@ export const SwapCard: React.FC<SwapCardProps> = ({
   return (
     <div>
       {/* Main Swap Card */}
-      <div className="crypto-card px-4 py-6 space-y-4">
+      <div className="crypto-card px-4 py-6">
         {/* From Token Section */}
         <TokenInput
           label="From"
@@ -124,7 +124,7 @@ export const SwapCard: React.FC<SwapCardProps> = ({
         />
 
         {/* Swap Direction with Separator */}
-        <div className="relative flex justify-center py-2 -mx-6">
+        <div className="relative flex justify-center py-2 -mx-6 mt-4">
           {/* Separator line going through button */}
           <div className="absolute top-1/2 left-0 right-0 h-1 bg-[#1C1C1C] transform -translate-y-1/2"></div>
           <button
