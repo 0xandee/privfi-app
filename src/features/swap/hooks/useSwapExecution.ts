@@ -115,9 +115,17 @@ export const useSwapExecution = ({
           withdrawalStatus: 'pending',
         }));
         
-        // For private swaps, initiate withdrawal after transaction confirmation
-        if (txHash && executionState.isPrivateSwap) {
-          handlePrivateWithdrawal(txHash);
+        // For private swaps, save SDK data with transaction hash first, then initiate withdrawal
+        if (txHash && executionState.isPrivateSwap && address) {
+          // Save the SDK data with the transaction hash for future withdrawal
+          typhoonService.saveDepositDataWithTxHash(txHash, address).then(() => {
+            console.log('✅ Deposit data saved, initiating withdrawal...');
+            handlePrivateWithdrawal(txHash);
+          }).catch((error) => {
+            console.error('❌ Failed to save deposit data:', error);
+            // Still attempt withdrawal in case data was already saved
+            handlePrivateWithdrawal(txHash);
+          });
         }
         
         // Show success toast (only once per transaction)
@@ -217,23 +225,43 @@ export const useSwapExecution = ({
         throw new Error('No transaction calls received from build response');
       }
 
-      // Generate Typhoon private swap calls (deposit calls)
-      const depositCalls = await typhoonService.generateApproveAndDepositCalls(
-        selectedQuote.buyAmount,
-        selectedQuote.buyTokenAddress
-      );
+      try {
+        // Attempt to generate Typhoon private swap calls (deposit calls)
+        const depositCalls = await typhoonService.generateApproveAndDepositCalls(
+          selectedQuote.buyAmount,
+          selectedQuote.buyTokenAddress,
+          address // Pass wallet address for future SDK data saving
+        );
 
-      // Combine AVNU swap calls with Typhoon deposit calls for private swap
-      const allCalls = [...buildResponse.calls, ...depositCalls];
+        // Combine AVNU swap calls with Typhoon deposit calls for private swap
+        const allCalls = [...buildResponse.calls, ...depositCalls];
 
-      // Set private swap state
-      setExecutionState(prev => ({
-        ...prev,
-        isPrivateSwap: true,
-      }));
+        // Set private swap state
+        setExecutionState(prev => ({
+          ...prev,
+          isPrivateSwap: true,
+        }));
 
-      // Execute the multicall transaction (swap + deposit)
-      sendTransaction(allCalls);
+        // Execute the multicall transaction (swap + deposit)
+        sendTransaction(allCalls);
+        
+      } catch (typhoonError) {
+        console.group('⚠️ Typhoon Fallback Activated');
+        console.warn('Typhoon service unavailable, falling back to regular swap');
+        console.warn('Original error:', typhoonError);
+        console.log('Proceeding with regular AVNU swap calls only');
+        console.groupEnd();
+        
+        // Fall back to regular swap without privacy layer
+        toast.warning('Private swap unavailable, proceeding with regular swap', {
+          description: 'Typhoon privacy service is temporarily unavailable',
+          duration: 5000,
+        });
+
+        // Execute regular swap without deposit calls
+        console.log('🔄 Executing regular swap fallback...');
+        sendTransaction(buildResponse.calls);
+      }
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to execute swap';

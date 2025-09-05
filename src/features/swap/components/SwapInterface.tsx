@@ -1,4 +1,5 @@
-import { Settings } from 'lucide-react';
+import { Settings, ArrowRightLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/shared/components/ui/button';
 import { useWalletConnection } from '@/features/wallet/hooks';
 import { useSwapForm } from '../hooks';
@@ -7,6 +8,7 @@ import { SwapCard } from './SwapCard';
 import { SwapErrorBoundary } from './SwapErrorBoundary';
 
 const SwapInterface = () => {
+  const navigate = useNavigate();
   const walletConnection = useWalletConnection();
   const swapForm = useSwapForm(walletConnection.address);
 
@@ -16,7 +18,18 @@ const SwapInterface = () => {
     <div className="min-h-screen bg-background p-4 flex flex-col items-center justify-center">
       <div className="w-full max-w-lg bg-[#1C1C1C] rounded-xl p-6">
         <div className="flex items-center justify-between mb-6">
-          <span className="text-lg font-medium text-white">Private Swap</span>
+          <div className="flex items-center gap-3">
+            <span className="text-lg font-medium text-white">Private Swap</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/withdraw')}
+              className="text-gray-400 hover:text-white text-sm"
+            >
+              <ArrowRightLeft className="h-4 w-4 mr-1" />
+              Withdraw
+            </Button>
+          </div>
           <div className="flex items-center">
             <WalletConnectionButton
               isConnected={walletConnection.isConnected}

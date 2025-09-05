@@ -1,0 +1,31 @@
+{
+  "environment": {
+    "node": "v23.10.0",
+    "npm": "10.9.2",
+    "yarn": "4.8.1",
+    "platform": "darwin",
+    "os": "Darwin 24.6.0"
+  },
+  "key_dependencies": {
+    "typhoon-sdk": "^1.0.45",
+    "starknet": "^8.5.2",
+    "@starknet-react/core": "^5.0.1",
+    "@starknet-react/chains": "^5.0.1",
+    "@starknet-io/get-starknet": "^4.0.7",
+    "@starknet-io/get-starknet-core": "^4.0.7",
+    "react": "^18.3.1",
+    "vite": "^5.4.19"
+  },
+  "build_tools": {
+    "@vitejs/plugin-react-swc": "^3.11.0",
+    "typescript": "^5.8.3",
+    "vite-plugin-node-polyfills": "^0.24.0"
+  },
+  "context": {
+    "app_type": "React SPA with Vite",
+    "blockchain": "StarkNet Mainnet",
+    "wallet_integration": "StarkNet React (Argent/Braavos)",
+    "dex_integration": "AVNU + Typhoon privacy layer",
+    "error_location": "Browser console in development mode"
+  }
+}
