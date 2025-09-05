@@ -40,12 +40,19 @@ src/
 │   │   ├── hooks/     # Swap-specific hooks
 │   │   ├── services/  # DEX integrations & factory pattern
 │   │   ├── store/     # Zustand store for swap state
-│   │   └── types/     # Swap-related TypeScript types
-│   └── wallet/        # All wallet-related functionality
-│       ├── components/ # Wallet UI components
-│       ├── hooks/     # Wallet connection hooks
-│       ├── store/     # Zustand store for wallet state
-│       └── types/     # Wallet-related TypeScript types
+│   │   ├── types/     # Swap-related TypeScript types
+│   │   └── utils/     # Swap utilities (Typhoon storage, etc.)
+│   ├── wallet/        # All wallet-related functionality
+│   │   ├── components/ # Wallet UI components
+│   │   ├── hooks/     # Wallet connection hooks
+│   │   ├── store/     # Zustand store for wallet state
+│   │   └── types/     # Wallet-related TypeScript types
+│   └── withdraw/      # All withdraw-related functionality
+│       ├── components/ # Withdraw UI components
+│       ├── hooks/     # Withdraw-specific hooks
+│       ├── services/  # Withdraw service implementations
+│       ├── store/     # Zustand store for withdraw state
+│       └── types/     # Withdraw-related TypeScript types
 ├── shared/            # Shared across features
 │   ├── components/ui/ # shadcn/ui component library
 │   ├── hooks/        # Generic reusable hooks
@@ -64,6 +71,7 @@ src/
 **Zustand Stores with Persistence:**
 - `features/swap/store/swapStore.ts` - Swap form state, quotes, settings with localStorage persistence
 - `features/wallet/store/walletStore.ts` - Wallet connection state
+- `features/withdraw/store/withdrawStore.ts` - Withdraw form state and transaction management
 - `shared/store/appStore.ts` - Global application state
 
 **React Query:** Server state management for API calls and caching
@@ -73,14 +81,16 @@ src/
 **Factory Pattern for DEX Integration:**
 - `DEXFactory` - Manages multiple DEX providers with lazy loading
 - `BaseDEX` - Abstract base class defining DEX interface
-- `AVNUService` - Current AVNU implementation
+- `AVNUService` - AVNU DEX aggregator implementation
+- `TyphoonService` - Privacy-focused DEX with zk-SNARK technology
 - Registry pattern supports easy addition of new DEX providers (MySwap, 10KSwap)
 
 ### Import Path Strategy
 
 Modular imports through feature boundaries:
 - `@/features/swap` - All swap functionality
-- `@/features/wallet` - All wallet functionality  
+- `@/features/wallet` - All wallet functionality
+- `@/features/withdraw` - All withdraw functionality
 - `@/shared` - Shared utilities, components, types
 - `@/core` - Core infrastructure
 
@@ -112,7 +122,9 @@ Each feature module exports through index files for clean API boundaries.
 - **StarkNet React** (`@starknet-react/core`) for primary wallet integration
 - **Wallet Connectors**: Argent and Braavos with fallback support
 - **AVNU DEX Aggregator**: Optimal swap routing with "Privfi" integrator (0.15% fees)
+- **Typhoon Privacy Protocol**: zk-SNARK based private transactions with SDK integration
 - **Quote Management**: Expiry checking, price impact calculation, multi-route aggregation
+- **Privacy Features**: Private swaps and withdrawals with note commitment/nullifier system
 
 ### Styling System
 - **Tailwind CSS** with custom classes in `index.css`
