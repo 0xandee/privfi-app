@@ -72,7 +72,7 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
 
   return (
     <>
-      <div className="crypto-card px-4 py-6 mt-6 space-y-4">
+      <div className="crypto-card px-4 py-6 mt-4 space-y-4">
         <div className="transaction-detail">
           <span className="transaction-detail-label">Rate</span>
           <span className="transaction-detail-value">

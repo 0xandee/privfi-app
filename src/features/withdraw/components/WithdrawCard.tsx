@@ -2,7 +2,6 @@ import { Plus, Minus, RefreshCw } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
-import { Card } from '@/shared/components/ui/card';
 import { useWithdraw } from '../hooks';
 import { RecipientInfo } from '../types';
 
@@ -67,8 +66,8 @@ const WithdrawCard: React.FC<WithdrawCardProps> = ({
   };
 
   return (
-    <Card className="crypto-card">
-      <div className="p-6 space-y-6">
+    <div>
+      <div className="crypto-card px-4 py-6 space-y-4">
         {/* Transaction Hash Input */}
         <div className="space-y-2">
           <Label htmlFor="transaction-hash" className="text-white">
@@ -174,40 +173,43 @@ const WithdrawCard: React.FC<WithdrawCardProps> = ({
           </div>
         )}
 
-        {/* Withdraw Button */}
+      </div>
+      
+      {/* Withdraw Button */}
+      <div className="mt-6 space-y-3">
         <Button
           onClick={handleWithdrawClick}
           disabled={!isConnected || !withdraw.canExecute || withdraw.isLoading || !withdraw.isPercentageValid}
-          className="swap-button w-full"
+          className="swap-button"
         >
           {withdraw.isLoading && <RefreshCw className="w-4 h-4 mr-2 animate-spin" />}
           {getButtonText()}
         </Button>
-
-        {/* Transaction History */}
-        {withdraw.transactionHistory.length > 0 && (
-          <div className="space-y-2 pt-4 border-t border-gray-700">
-            <Label className="text-white text-sm">Recent Deposits</Label>
-            <div className="space-y-1 max-h-32 overflow-y-auto">
-              {withdraw.transactionHistory.map((tx) => (
-                <div
-                  key={tx.hash}
-                  className="flex items-center justify-between p-2 bg-gray-800/50 rounded text-xs cursor-pointer hover:bg-gray-700/50"
-                  onClick={() => withdraw.setTransactionHash(tx.hash)}
-                >
-                  <span className="text-gray-400">
-                    {tx.hash.slice(0, 10)}...{tx.hash.slice(-8)}
-                  </span>
-                  <span className="text-white">
-                    {tx.amount} {tx.tokenSymbol}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
-    </Card>
+
+      {/* Transaction History */}
+      {withdraw.transactionHistory.length > 0 && (
+        <div className="mt-6 space-y-2 pt-4 border-t border-gray-700">
+          <Label className="text-white text-sm">Recent Deposits</Label>
+          <div className="space-y-1 max-h-32 overflow-y-auto">
+            {withdraw.transactionHistory.map((tx) => (
+              <div
+                key={tx.hash}
+                className="flex items-center justify-between p-2 bg-gray-800/50 rounded text-xs cursor-pointer hover:bg-gray-700/50"
+                onClick={() => withdraw.setTransactionHash(tx.hash)}
+              >
+                <span className="text-gray-400">
+                  {tx.hash.slice(0, 10)}...{tx.hash.slice(-8)}
+                </span>
+                <span className="text-white">
+                  {tx.amount} {tx.tokenSymbol}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

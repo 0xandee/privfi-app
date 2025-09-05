@@ -12,7 +12,7 @@ const WithdrawInterface = () => {
   return (
     <div className="min-h-screen bg-background p-4 flex flex-col items-center justify-center">
       <div className="w-full max-w-lg bg-[#1C1C1C] rounded-xl p-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
@@ -48,16 +48,6 @@ const WithdrawInterface = () => {
           isConnected={walletConnection.isConnected}
         />
 
-        {/* Info Section */}
-        <div className="mt-6 p-4 bg-blue-900/10 border border-blue-500/20 rounded-lg">
-          <h3 className="text-blue-400 font-medium mb-2">How Typhoon Withdraw Works</h3>
-          <ul className="text-sm text-gray-300 space-y-1">
-            <li>• Enter the transaction hash from your deposit</li>
-            <li>• Split withdrawal between multiple addresses for enhanced privacy</li>
-            <li>• Transactions are executed by Typhoon paymaster</li>
-            <li>• Network fees are covered automatically</li>
-          </ul>
-        </div>
       </div>
     </div>
   );
