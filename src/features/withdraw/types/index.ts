@@ -16,6 +16,7 @@ export interface WithdrawState {
   isSuccess: boolean;
   error: string | null;
   transactionHistory: DepositTransaction[];
+  progress?: WithdrawProgress;
 }
 
 export interface DepositTransaction {
@@ -33,3 +34,18 @@ export interface WithdrawFormData {
 }
 
 export type WithdrawStatus = 'idle' | 'validating' | 'executing' | 'success' | 'error';
+
+export type WithdrawPhase = 
+  | 'preparing'
+  | 'validating-hash'
+  | 'validating-recipients' 
+  | 'awaiting-signature'
+  | 'broadcasting'
+  | 'confirming'
+  | 'completed';
+
+export interface WithdrawProgress {
+  phase: WithdrawPhase;
+  message: string;
+  estimatedTimeMs?: number;
+}

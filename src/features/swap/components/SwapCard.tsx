@@ -2,11 +2,12 @@ import React, { useMemo } from 'react';
 import { ArrowUpDown, RefreshCw } from 'lucide-react';
 import { TokenInput } from './TokenInput';
 import { TransactionDetails } from './TransactionDetails';
-import { Button } from '@/shared/components/ui/button';
+import { LoadingButton } from '@/shared/components/ui/loading-button';
 import { Token } from '@/constants/tokens';
 import { useTokenBalance } from '@/shared/hooks';
 import { ErrorMessage } from '@/shared/components/ui/error-message';
 import { AVNUQuote, formatQuoteForDisplay, extractTokenPricesFromQuote } from '../services/avnu';
+import { useSwapStore } from '../store/swapStore';
 
 interface SwapCardProps {
   fromAmount: string;
@@ -100,8 +101,8 @@ export const SwapCard: React.FC<SwapCardProps> = ({
     return inputAmount > availableBalance;
   }, [fromAmount, fromTokenBalance.rawFormatted]);
 
-
-
+  // Get execution progress from store
+  const { executionProgress } = useSwapStore();
 
   return (
     <div>
@@ -195,9 +196,12 @@ export const SwapCard: React.FC<SwapCardProps> = ({
 
       {/* Swap Button */}
       <div className="mt-6 space-y-3">
-        <Button
-          className={`swap-button ${(!isValidTokenPair || isQuoteExpired || (quotesError && fromAmount && parseFloat(fromAmount) > 0) || isExecutingSwap || exceedsBalance) ? 'opacity-50 cursor-not-allowed' : ''}`}
+        <LoadingButton
+          className="swap-button"
           onClick={onSwap}
+          loading={isExecutingSwap}
+          loadingText="Executing swap..."
+          spinnerVariant="refresh"
           disabled={
             !isValidTokenPair ||
             !fromAmount ||
@@ -206,6 +210,7 @@ export const SwapCard: React.FC<SwapCardProps> = ({
             isQuoteExpired ||
             (quotesError && fromAmount && parseFloat(fromAmount) > 0) ||
             isExecutingSwap ||
+            !!executionProgress ||
             exceedsBalance
           }
         >
@@ -214,6 +219,17 @@ export const SwapCard: React.FC<SwapCardProps> = ({
             if (exceedsBalance) return `Insufficient ${fromToken.symbol} Balance`;
             if (isQuoteExpired) return 'Quote Expired - Refresh';
             if (quotesError && fromAmount && parseFloat(fromAmount) > 0) return 'Quote Error';
+            if (executionProgress) return (
+              <div className="flex items-center gap-2">
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                <span>
+                  {executionProgress.message}
+                  {executionProgress.estimatedTimeMs && (
+                    <span className="text-gray-400"> (~{Math.ceil(executionProgress.estimatedTimeMs / 1000)}s)</span>
+                  )}
+                </span>
+              </div>
+            );
             if (isExecutingSwap) return (
               <div className="flex items-center gap-2">
                 <RefreshCw className="h-4 w-4 animate-spin" />
@@ -229,7 +245,7 @@ export const SwapCard: React.FC<SwapCardProps> = ({
             if (fromAmount && parseFloat(fromAmount) > 0 && isValidTokenPair && !selectedQuote) return 'No Quote Available';
             return 'Swap';
           })()}
-        </Button>
+        </LoadingButton>
       </div>
     </div>
   );

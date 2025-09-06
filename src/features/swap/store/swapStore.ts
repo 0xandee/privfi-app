@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { Token, SwapQuote } from '@/shared/types';
 import { STARKNET_TOKENS } from '@/constants/tokens';
+import { SwapProgress } from '../types/swap';
 
 interface SwapState {
   // Form state
@@ -16,6 +17,10 @@ interface SwapState {
   selectedQuote: SwapQuote | null;
   isLoadingQuotes: boolean;
   quotesError: string | null;
+  
+  // Execution state
+  isExecuting: boolean;
+  executionProgress?: SwapProgress;
   
   // Privacy configuration
   privacy: {
@@ -45,6 +50,10 @@ interface SwapActions {
   setQuotesLoading: (loading: boolean) => void;
   setQuotesError: (error: string | null) => void;
   
+  // Execution actions
+  setExecuting: (executing: boolean) => void;
+  setExecutionProgress: (progress: SwapProgress | undefined) => void;
+  
   // Privacy actions
   setRecipientAddress: (address: string) => void;
   setPrivacyEnabled: (enabled: boolean) => void;
@@ -70,6 +79,9 @@ const initialState: SwapState = {
   selectedQuote: null,
   isLoadingQuotes: false,
   quotesError: null,
+  
+  isExecuting: false,
+  executionProgress: undefined,
   
   privacy: {
     recipientAddress: '',
@@ -101,6 +113,10 @@ export const useSwapStore = create<SwapStore>()(
         setSelectedQuote: (quote) => set({ selectedQuote: quote }),
         setQuotesLoading: (loading) => set({ isLoadingQuotes: loading }),
         setQuotesError: (error) => set({ quotesError: error }),
+        
+        // Execution actions
+        setExecuting: (executing) => set({ isExecuting: executing }),
+        setExecutionProgress: (progress) => set({ executionProgress: progress }),
         
         // Privacy actions
         setRecipientAddress: (address) => set((state) => ({

@@ -12,6 +12,22 @@ export interface BuildSwapResponse {
   calls: Call[];
 }
 
+export type SwapPhase = 
+  | 'preparing'
+  | 'building-swap'
+  | 'generating-deposit'
+  | 'awaiting-signature'
+  | 'broadcasting'
+  | 'confirming'
+  | 'processing-withdrawal'
+  | 'completed';
+
+export interface SwapProgress {
+  phase: SwapPhase;
+  message: string;
+  estimatedTimeMs?: number;
+}
+
 export interface SwapExecutionState {
   isLoading: boolean;
   isSuccess: boolean;
@@ -20,4 +36,5 @@ export interface SwapExecutionState {
   transactionHash: string | null;
   isPrivateSwap?: boolean;
   withdrawalStatus?: 'pending' | 'completed' | 'failed';
+  progress?: SwapProgress;
 }

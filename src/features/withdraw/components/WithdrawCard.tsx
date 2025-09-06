@@ -1,5 +1,6 @@
 import { Plus, Minus, RefreshCw } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
+import { LoadingButton } from '@/shared/components/ui/loading-button';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { useWithdraw } from '../hooks';
@@ -60,6 +61,18 @@ const WithdrawCard: React.FC<WithdrawCardProps> = ({
 
   const getButtonText = () => {
     if (!isConnected) return 'Connect Wallet';
+    if (withdraw.progress) {
+      const message = withdraw.progress.message;
+      const timeEstimate = withdraw.progress.estimatedTimeMs 
+        ? ` (~${Math.ceil(withdraw.progress.estimatedTimeMs / 1000)}s)`
+        : '';
+      return (
+        <span>
+          {message}
+          {timeEstimate && <span className="text-gray-400">{timeEstimate}</span>}
+        </span>
+      );
+    }
     if (withdraw.isLoading) return 'Processing...';
     if (!withdraw.canExecute) return 'Complete Form';
     return 'Withdraw';
@@ -177,14 +190,24 @@ const WithdrawCard: React.FC<WithdrawCardProps> = ({
       
       {/* Withdraw Button */}
       <div className="mt-6 space-y-3">
-        <Button
+        <LoadingButton
           onClick={handleWithdrawClick}
-          disabled={!isConnected || !withdraw.canExecute || withdraw.isLoading || !withdraw.isPercentageValid}
+          disabled={!isConnected || !withdraw.canExecute || withdraw.isLoading || !!withdraw.progress || !withdraw.isPercentageValid}
+          loading={withdraw.isLoading}
+          loadingText="Processing..."
+          spinnerVariant="refresh"
           className="swap-button"
         >
-          {withdraw.isLoading && <RefreshCw className="w-4 h-4 mr-2 animate-spin" />}
           {getButtonText()}
-        </Button>
+        </LoadingButton>
+        
+        {/* Transaction Processing Warning */}
+        {(withdraw.isLoading || withdraw.progress) && (
+          <div className="flex items-center justify-center gap-2 text-xs text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-lg py-2 px-3">
+            <span>⚠️</span>
+            <span>Do not refresh or close this page while transaction is processing</span>
+          </div>
+        )}
       </div>
 
       {/* Transaction History */}

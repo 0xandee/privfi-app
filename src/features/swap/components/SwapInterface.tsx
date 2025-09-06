@@ -84,6 +84,13 @@ const SwapInterface = () => {
           />
         </SwapErrorBoundary>
       </div>
+
+      {/* Transaction Processing Warning */}
+      {(
+        <div className="flex items-center justify-center gap-2 text-xs p-3">
+          <span className="text-gray-400">Do not refresh or close this page while transaction is processing</span>
+        </div>
+      )}
     </div>
   );
 };
