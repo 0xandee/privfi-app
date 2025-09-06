@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/shared/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip';
-import { Info } from 'lucide-react';
-import { PrivacyConfig } from './PrivacyConfig';
+import { Input } from '@/shared/components/ui/input';
+import { Button } from '@/shared/components/ui/button';
+import { Info, User } from 'lucide-react';
+import { useSwapStore } from '../store/swapStore';
 
 interface TransactionDetailsProps {
   rate?: string;
@@ -31,6 +33,8 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
   toTokenSymbol = "",
   walletAddress,
 }) => {
+  const { privacy, setRecipientAddress } = useSwapStore();
+  const [tempAddress, setTempAddress] = useState(privacy.recipientAddress || '');
 
   const presetSlippages = [0, 0.1, 0.5, 1];
 
@@ -69,6 +73,29 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
   const handleSlippageClick = (value: number) => {
     onSlippageChange?.(value);
   };
+
+  const handleAddressChange = (value: string) => {
+    setTempAddress(value);
+    setRecipientAddress(value);
+  };
+
+  const handleUseWallet = () => {
+    if (walletAddress) {
+      setTempAddress(walletAddress);
+      setRecipientAddress(walletAddress);
+    }
+  };
+
+  const displayAddress = privacy.recipientAddress || tempAddress || '';
+  const truncatedAddress = displayAddress 
+    ? displayAddress.length > 20
+      ? `${displayAddress.slice(0, 8)}...${displayAddress.slice(-8)}`
+      : displayAddress
+    : '';
+  
+  const placeholderText = walletAddress 
+    ? `${walletAddress.slice(0, 8)}...${walletAddress.slice(-8)} (default)`
+    : 'Enter recipient address';
 
   return (
     <>
@@ -135,11 +162,30 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
             </SelectContent>
           </Select>
         </div>
-      </div>
-      
-      {/* Privacy Configuration */}
-      <div className="mt-4">
-        <PrivacyConfig walletAddress={walletAddress} />
+
+        <div className="transaction-detail">
+          <span className="transaction-detail-label">Recipient Address</span>
+          <div className="flex items-center gap-2">
+            <Input
+              type="text"
+              placeholder={placeholderText}
+              value={tempAddress}
+              onChange={(e) => handleAddressChange(e.target.value)}
+              className="h-8 px-2 py-1 bg-token-selector border-0 focus:ring-0 shadow-none text-xs font-medium min-w-0 flex-1"
+            />
+            {walletAddress && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleUseWallet}
+                className="h-6 px-2 text-xs text-gray-400 hover:text-white"
+              >
+                Use Wallet
+              </Button>
+            )}
+          </div>
+        </div>
+
       </div>
     </>
   );
