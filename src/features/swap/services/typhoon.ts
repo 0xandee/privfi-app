@@ -9,7 +9,6 @@ import {
   TyphoonDepositCall
 } from '../types/typhoon';
 import { 
-  getAllTyphoonSdkData, 
   loadTyphoonDepositData,
   saveTyphoonDepositData,
   clearTyphoonDepositData,
@@ -40,40 +39,43 @@ export class TyphoonService extends BaseDEXService {
     console.groupEnd();
   }
 
-  private async initializeSDK(): Promise<void> {
-    if (this.isInitialized) {
+  private async initializeSDK(mode: 'deposit' | 'withdrawal' = 'deposit'): Promise<void> {
+    if (this.isInitialized && mode === 'deposit') {
       return;
     }
 
-    if (this.initializationPromise) {
+    if (this.initializationPromise && mode === 'deposit') {
       return this.initializationPromise;
     }
 
-    this.initializationPromise = this.performInitialization();
+    // For withdrawals, always force re-initialization
+    if (mode === 'withdrawal') {
+      this.isInitialized = false;
+      this.initializationPromise = null;
+    }
+
+    this.initializationPromise = this.performInitialization(mode);
     return this.initializationPromise;
   }
 
-  private async performInitialization(): Promise<void> {
+  private async performInitialization(mode: 'deposit' | 'withdrawal' = 'deposit'): Promise<void> {
     try {
       console.group('🔧 Typhoon SDK Initialization');
-      console.log('Initializing Typhoon SDK...');
+      console.log('Initializing Typhoon SDK for:', mode);
       console.log('SDK instance before init:', this.sdk);
       
-      // Load stored Typhoon data from previous deposits
-      const storedData = getAllTyphoonSdkData();
-      console.log('Loading stored Typhoon data:');
-      console.log('  - Secrets:', storedData.secrets.length);
-      console.log('  - Nullifiers:', storedData.nullifiers.length);
-      console.log('  - Pools:', storedData.pools.length);
-      
-      // Initialize the SDK with stored data (or empty arrays for first use)
-      this.sdk.init(storedData.secrets, storedData.nullifiers, storedData.pools);
-      this.isInitialized = true;
-      
-      if (storedData.secrets.length > 0 || storedData.nullifiers.length > 0 || storedData.pools.length > 0) {
-        console.log('✅ SDK initialized with stored deposit data');
+      if (mode === 'deposit') {
+        // For new deposits: Always start with empty arrays to avoid data accumulation
+        console.log('🆕 Initializing for new deposit with empty arrays');
+        this.sdk.init([], [], []);
+        this.isInitialized = true;
+        console.log('✅ SDK initialized with empty arrays for new deposit');
       } else {
-        console.log('ℹ️ SDK initialized with empty arrays (first use)');
+        // For withdrawals: This will be handled separately with specific deposit data
+        console.log('💸 Initialization for withdrawal will use specific deposit data');
+        this.sdk.init([], [], []);
+        this.isInitialized = true;
+        console.log('✅ SDK initialized (withdrawal mode will load specific data)');
       }
       
       console.log('SDK instance after init:', this.sdk);
@@ -121,7 +123,7 @@ export class TyphoonService extends BaseDEXService {
       console.log('Transaction Hash:', transactionHash);
       
       // Ensure SDK is initialized
-      await this.initializeSDK();
+      await this.initializeSDK('deposit');
       
       // Convert string amount to BigInt
       const amountBigInt = BigInt(amountOut);
@@ -135,16 +137,29 @@ export class TyphoonService extends BaseDEXService {
       console.log('✅ Deposit calls generated:', depositCalls);
       
       // CRITICAL: Save SDK data after generation (as per Typhoon docs)
-      console.log('📦 Extracting SDK data for persistence...');
+      console.log('📦 Extracting NEW deposit-specific SDK data for persistence...');
       try {
         const secrets = this.sdk.get_secrets();
         const nullifiers = this.sdk.get_nullifiers();
         const pools = this.sdk.get_pools();
         
-        console.log('Extracted SDK data:');
+        console.log('Extracted NEW deposit data (should contain only this deposit):');
         console.log('  - Secrets:', secrets?.length || 0);
         console.log('  - Nullifiers:', nullifiers?.length || 0);
         console.log('  - Pools:', pools?.length || 0);
+        
+        // Validate that we're not accumulating data from previous deposits
+        if (secrets?.length > 5 || nullifiers?.length > 5 || pools?.length > 5) {
+          console.warn('⚠️ WARNING: Extracted arrays seem too large for a single deposit!');
+          console.warn('This suggests data accumulation from previous deposits.');
+          console.warn('Expected: 1-5 items per array, Got:', {
+            secrets: secrets?.length,
+            nullifiers: nullifiers?.length,
+            pools: pools?.length
+          });
+        } else {
+          console.log('✅ Data sizes look correct for a single deposit');
+        }
         
         // Save data if we have transaction hash and wallet address
         if (transactionHash && walletAddress && (secrets?.length || nullifiers?.length || pools?.length)) {
@@ -287,6 +302,10 @@ export class TyphoonService extends BaseDEXService {
         console.log(`  - Valid format: ${/^0x[a-fA-F0-9]{63,64}$/.test(address)}`);
       });
       
+      // Initialize SDK for withdrawal with empty state first
+      console.log('🔄 Initializing SDK for withdrawal...');
+      await this.initializeSDK('withdrawal');
+      
       // CRITICAL: Load specific deposit data for this transaction
       console.log('📂 Loading deposit data for transaction...');
       const depositData = loadTyphoonDepositData(withdrawRequest.transactionHash);
@@ -308,34 +327,113 @@ export class TyphoonService extends BaseDEXService {
       console.log('  - Amount:', depositData.amount);
       console.log('  - Age:', Date.now() - depositData.timestamp, 'ms');
       
+      // Validate deposit data quality and consistency
+      if (!depositData.secrets || !Array.isArray(depositData.secrets)) {
+        throw new Error('Invalid deposit data: secrets must be a valid array');
+      }
+      if (!depositData.nullifiers || !Array.isArray(depositData.nullifiers)) {
+        throw new Error('Invalid deposit data: nullifiers must be a valid array');
+      }
+      if (!depositData.pools || !Array.isArray(depositData.pools)) {
+        throw new Error('Invalid deposit data: pools must be a valid array');
+      }
+      
+      // Check data consistency - all arrays should have matching lengths for proper deposits
+      if (depositData.secrets.length !== depositData.nullifiers.length || 
+          depositData.nullifiers.length !== depositData.pools.length) {
+        console.warn('⚠️ Deposit data arrays have inconsistent lengths:');
+        console.warn('  - Secrets:', depositData.secrets.length);
+        console.warn('  - Nullifiers:', depositData.nullifiers.length); 
+        console.warn('  - Pools:', depositData.pools.length);
+      }
+      
+      console.log('✅ Deposit data validation passed');
+      
       // Re-initialize SDK with the specific deposit data
       console.log('🔄 Re-initializing SDK with deposit-specific data...');
       this.isInitialized = false; // Force re-initialization
       this.initializationPromise = null;
       
-      // Set the specific deposit data in the SDK
-      this.sdk.set_secrets(depositData.secrets);
-      this.sdk.set_nullifiers(depositData.nullifiers);
-      this.sdk.set_pools(depositData.pools);
+      try {
+        // Properly re-initialize the SDK with the deposit data
+        console.log('Calling sdk.init() with deposit data...');
+        console.log('  - Secrets array length:', depositData.secrets.length);
+        console.log('  - Nullifiers array length:', depositData.nullifiers.length);
+        console.log('  - Pools array length:', depositData.pools.length);
+        
+        this.sdk.init(depositData.secrets, depositData.nullifiers, depositData.pools);
+        this.isInitialized = true;
+        
+        console.log('✅ SDK properly re-initialized with deposit data');
+        
+        // Verify SDK state after initialization
+        try {
+          // Test if SDK is properly initialized by checking if withdraw method exists and is callable
+          if (typeof this.sdk.withdraw !== 'function') {
+            throw new Error('SDK withdraw method is not available after initialization');
+          }
+          console.log('✅ SDK state verification passed - withdraw method available');
+        } catch (verifyError) {
+          console.error('❌ SDK state verification failed:', verifyError);
+          this.isInitialized = false;
+          throw new Error(`SDK initialization failed verification: ${verifyError.message}`);
+        }
+        
+      } catch (initError) {
+        console.error('❌ SDK re-initialization failed:', initError);
+        this.isInitialized = false;
+        this.initializationPromise = null;
+        throw new Error(`Failed to re-initialize SDK with deposit data: ${initError.message}`);
+      }
       
-      console.log('✅ SDK state restored with deposit data');
-      
-      // Log SDK state
-      console.log('SDK instance:', this.sdk);
+      // Enhanced debug logging for SDK state transitions
+      console.group('🔍 SDK State Analysis');
+      console.log('SDK instance type:', typeof this.sdk);
+      console.log('SDK constructor name:', this.sdk.constructor?.name);
+      console.log('SDK initialization status:', this.isInitialized);
       console.log('SDK methods available:', Object.getOwnPropertyNames(Object.getPrototypeOf(this.sdk)));
       
-      // Log the exact parameters being passed to the SDK
-      console.log('Parameters being passed to sdk.withdraw():');
-      console.log('  - transactionHash (raw):', withdrawRequest.transactionHash);
-      console.log('  - transactionHash (type):', typeof withdrawRequest.transactionHash);
-      console.log('  - recipientAddresses (raw):', withdrawRequest.recipientAddresses);
-      console.log('  - recipientAddresses (type):', typeof withdrawRequest.recipientAddresses);
-      console.log('  - recipientAddresses (Array.isArray):', Array.isArray(withdrawRequest.recipientAddresses));
+      // Log current SDK internal state (if accessible)
+      try {
+        const sdkState = {
+          secretsCount: depositData.secrets?.length,
+          nullifiersCount: depositData.nullifiers?.length,  
+          poolsCount: depositData.pools?.length,
+          hasWithdrawMethod: typeof this.sdk.withdraw === 'function'
+        };
+        console.log('SDK internal state summary:', sdkState);
+      } catch (stateError) {
+        console.log('Could not access SDK internal state:', stateError.message);
+      }
+      console.groupEnd();
       
-      // Check SDK method existence
-      console.log('SDK withdraw method exists:', typeof this.sdk.withdraw === 'function');
+      // Enhanced parameter logging for withdraw call
+      console.group('📋 Withdraw Parameters Analysis');
+      console.log('Transaction Hash:');
+      console.log('  - Value:', withdrawRequest.transactionHash);
+      console.log('  - Type:', typeof withdrawRequest.transactionHash);
+      console.log('  - Length:', withdrawRequest.transactionHash?.length);
+      console.log('  - Starts with 0x:', withdrawRequest.transactionHash?.startsWith?.('0x'));
       
-      console.log('Calling sdk.withdraw()...');
+      console.log('Recipient Addresses:');
+      console.log('  - Value:', withdrawRequest.recipientAddresses);
+      console.log('  - Type:', typeof withdrawRequest.recipientAddresses);
+      console.log('  - Is Array:', Array.isArray(withdrawRequest.recipientAddresses));
+      console.log('  - Array Length:', withdrawRequest.recipientAddresses?.length);
+      if (Array.isArray(withdrawRequest.recipientAddresses)) {
+        withdrawRequest.recipientAddresses.forEach((addr, index) => {
+          console.log(`  - Address[${index}]:`, addr, `(${typeof addr})`);
+        });
+      }
+      console.groupEnd();
+      
+      // Pre-withdraw SDK state verification
+      console.log('🔧 Pre-withdraw SDK verification:');
+      console.log('  - SDK withdraw method exists:', typeof this.sdk.withdraw === 'function');
+      console.log('  - SDK initialized:', this.isInitialized);
+      console.log('  - Deposit data loaded:', depositData.secrets.length > 0);
+      
+      console.log('🚀 Initiating sdk.withdraw() call...');
       const startTime = Date.now();
       try {
         const result = await this.sdk.withdraw(
@@ -355,12 +453,35 @@ export class TyphoonService extends BaseDEXService {
         
       } catch (sdkError) {
         const duration = Date.now() - startTime;
-        console.error('❌ SDK withdraw call failed');
-        console.error('Execution time:', duration + 'ms');
-        console.error('SDK Error details:');
+        console.group('❌ SDK Withdraw Failure Analysis');
+        console.error('SDK withdraw call failed after', duration + 'ms');
+        console.error('Error details:');
         console.error('  - Error type:', sdkError?.constructor?.name);
         console.error('  - Error message:', sdkError instanceof Error ? sdkError.message : sdkError);
         console.error('  - Error stack:', sdkError instanceof Error ? sdkError.stack : 'No stack');
+        
+        // Log SDK state at time of failure
+        console.error('SDK state at failure:');
+        console.error('  - SDK initialized:', this.isInitialized);
+        console.error('  - SDK type:', typeof this.sdk);
+        console.error('  - Withdraw method available:', typeof this.sdk.withdraw === 'function');
+        console.error('  - Secrets loaded:', depositData.secrets?.length || 0);
+        console.error('  - Nullifiers loaded:', depositData.nullifiers?.length || 0);
+        console.error('  - Pools loaded:', depositData.pools?.length || 0);
+        
+        // Log what might have caused the failure
+        console.error('Potential causes:');
+        if (!this.isInitialized) {
+          console.error('  ⚠️ SDK not properly initialized');
+        }
+        if (depositData.secrets?.length === 0) {
+          console.error('  ⚠️ No secrets loaded');
+        }
+        if (typeof this.sdk.withdraw !== 'function') {
+          console.error('  ⚠️ Withdraw method not available');
+        }
+        console.groupEnd();
+        
         throw sdkError; // Re-throw to maintain error flow
       }
       console.groupEnd();

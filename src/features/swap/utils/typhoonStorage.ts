@@ -88,10 +88,16 @@ export function loadTyphoonDepositData(transactionHash: string): TyphoonDepositD
 
 /**
  * Get all stored Typhoon SDK data (secrets, nullifiers, pools)
+ * 
+ * @deprecated This function combines data from multiple deposits which can cause
+ * SDK state accumulation issues. Use loadTyphoonDepositData() for specific transactions instead.
+ * Only use this function for debugging or migration purposes.
  */
 export function getAllTyphoonSdkData(): { secrets: any[], nullifiers: any[], pools: any[] } {
   try {
-    console.log('🔍 Getting all Typhoon SDK data for initialization');
+    console.warn('⚠️ DEPRECATED: getAllTyphoonSdkData() combines multiple deposits');
+    console.warn('This can cause SDK state accumulation. Use loadTyphoonDepositData() instead.');
+    console.log('🔍 Getting all Typhoon SDK data (DEBUG/MIGRATION ONLY)');
     
     const data = getTyphoonStorageData();
     
