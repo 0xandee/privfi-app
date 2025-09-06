@@ -35,6 +35,6 @@ export interface SwapExecutionState {
   error: string | null;
   transactionHash: string | null;
   isPrivateSwap?: boolean;
-  withdrawalStatus?: 'pending' | 'completed' | 'failed';
+  withdrawalStatus?: 'pending' | 'processing' | 'completed' | 'failed';
   progress?: SwapProgress;
 }

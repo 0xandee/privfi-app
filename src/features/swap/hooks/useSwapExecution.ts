@@ -33,6 +33,8 @@ export const useSwapExecution = ({
     isError: false,
     error: null,
     transactionHash: null,
+    isPrivateSwap: false,
+    withdrawalStatus: undefined,
   });
 
   const avnuService = useMemo(() => new AVNUService(), []);
@@ -56,7 +58,18 @@ export const useSwapExecution = ({
   });
 
   const handlePrivateWithdrawal = useCallback(async (txHash: string) => {
+    // Prevent duplicate withdrawal calls
+    if (executionState.withdrawalStatus === 'processing' || executionState.withdrawalStatus === 'completed') {
+      console.log('⏸️ Withdrawal already in progress or completed, skipping...');
+      return;
+    }
+
     try {
+      setExecutionState(prev => ({
+        ...prev,
+        withdrawalStatus: 'processing',
+      }));
+
       updateProgress({
         phase: 'processing-withdrawal',
         message: 'Processing private withdrawal...',
@@ -77,6 +90,7 @@ export const useSwapExecution = ({
       setExecutionState(prev => ({
         ...prev,
         withdrawalStatus: 'completed',
+        isPrivateSwap: false, // Clear flag after successful withdrawal
       }));
 
       updateProgress({
@@ -94,6 +108,7 @@ export const useSwapExecution = ({
       setExecutionState(prev => ({
         ...prev,
         withdrawalStatus: 'failed',
+        isPrivateSwap: false, // Clear flag on failure too
       }));
 
       updateProgress(undefined);
@@ -103,7 +118,7 @@ export const useSwapExecution = ({
         duration: 8000,
       });
     }
-  }, [typhoonService, recipientAddress, address, updateProgress]);
+  }, [typhoonService, recipientAddress, address, updateProgress, executionState.withdrawalStatus]);
 
   // Update execution state based on transaction status
   useEffect(() => {
@@ -152,17 +167,26 @@ export const useSwapExecution = ({
         });
         
         // For private swaps, save SDK data with transaction hash first, then initiate withdrawal
-        if (txHash && executionState.isPrivateSwap && address) {
-          // Save the SDK data with the transaction hash for future withdrawal
-          typhoonService.saveDepositDataWithTxHash(txHash, address).then(() => {
-            console.log('✅ Deposit data saved, initiating withdrawal...');
+        // Only do this if we haven't already processed this transaction and we have pending deposit data
+        if (txHash && executionState.isPrivateSwap && address && executionState.withdrawalStatus !== 'processing' && executionState.withdrawalStatus !== 'completed') {
+          // Check if we have pending deposit data to save
+          const hasPendingData = typhoonService.hasPendingDepositData();
+          
+          if (hasPendingData) {
+            // Save the SDK data with the transaction hash for future withdrawal
+            typhoonService.saveDepositDataWithTxHash(txHash, address).then(() => {
+              console.log('✅ Deposit data saved, initiating withdrawal...');
+              handlePrivateWithdrawal(txHash);
+            }).catch((error) => {
+              console.error('❌ Failed to save deposit data:', error);
+              // Still attempt withdrawal in case data was already saved
+              handlePrivateWithdrawal(txHash);
+            });
+          } else {
+            console.log('📋 No pending deposit data to save, proceeding with withdrawal...');
             handlePrivateWithdrawal(txHash);
-          }).catch((error) => {
-            console.error('❌ Failed to save deposit data:', error);
-            // Still attempt withdrawal in case data was already saved
-            handlePrivateWithdrawal(txHash);
-          });
-        } else {
+          }
+        } else if (txHash && !executionState.isPrivateSwap) {
           // Regular swap completion
           setTimeout(() => {
             updateProgress({
@@ -259,6 +283,8 @@ export const useSwapExecution = ({
         isError: false,
         error: null,
         transactionHash: null,
+        isPrivateSwap: false, // Reset private swap flag
+        withdrawalStatus: 'pending', // Reset withdrawal status
       }));
 
       setExecuting(true);
@@ -379,6 +405,8 @@ export const useSwapExecution = ({
       isError: false,
       error: null,
       transactionHash: null,
+      isPrivateSwap: false,
+      withdrawalStatus: undefined,
     });
     setExecuting(false);
     updateProgress(undefined);

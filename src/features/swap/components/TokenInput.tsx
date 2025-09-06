@@ -142,16 +142,10 @@ export const TokenInput: React.FC<TokenInputProps> = ({
 
   const handlePercentageClick = (percentage: number) => {
     if (balance && parseFloat(balance) > 0) {
-      const balanceNum = parseFloat(balance);
-      const amount = (balanceNum * percentage) / 100;
-      // Format to appropriate decimals based on token, removing trailing zeros
-      const maxDisplayDecimals = selectedToken.decimals > 6 ? 6 : selectedToken.decimals;
-      const formattedAmount = formatTokenAmountDisplay(amount, maxDisplayDecimals);
-      validation.setValue(formattedAmount);
       setActivePercentage(percentage); // Set active percentage for visual feedback
+      // Call the parent's percentage click handler
+      onPercentageClick?.(percentage);
     }
-    // Also call the parent's percentage click handler if provided
-    onPercentageClick?.(percentage);
   };
 
   return (

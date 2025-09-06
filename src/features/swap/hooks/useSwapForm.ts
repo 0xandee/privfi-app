@@ -74,7 +74,15 @@ export const useSwapForm = (walletAddress?: string) => {
     // Calculate percentage of balance
     const balanceNum = parseFloat(balance);
     if (balanceNum > 0) {
-      const amount = (balanceNum * percentage) / 100;
+      let amount = (balanceNum * percentage) / 100;
+      
+      // For 100%, use Math.floor to ensure we never exceed the balance due to rounding
+      if (percentage === 100) {
+        // Truncate to 6 decimal places to prevent exceeding balance
+        const multiplier = Math.pow(10, 6);
+        amount = Math.floor(amount * multiplier) / multiplier;
+      }
+      
       setFromAmount(formatTokenAmountDisplay(amount, 6));
     }
   };

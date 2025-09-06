@@ -40,18 +40,22 @@ export class TyphoonService extends BaseDEXService {
   }
 
   private async initializeSDK(mode: 'deposit' | 'withdrawal' = 'deposit'): Promise<void> {
-    if (this.isInitialized && mode === 'deposit') {
-      return;
+    // For deposits, always force re-initialization to prevent data accumulation
+    if (mode === 'deposit') {
+      console.log('🔄 Forcing SDK re-initialization for new deposit');
+      this.isInitialized = false;
+      this.initializationPromise = null;
     }
 
-    if (this.initializationPromise && mode === 'deposit') {
-      return this.initializationPromise;
-    }
-
-    // For withdrawals, always force re-initialization
+    // For withdrawals, also force re-initialization
     if (mode === 'withdrawal') {
       this.isInitialized = false;
       this.initializationPromise = null;
+    }
+
+    // Skip re-initialization only if already initialized AND not a deposit/withdrawal
+    if (this.isInitialized && this.initializationPromise) {
+      return this.initializationPromise;
     }
 
     this.initializationPromise = this.performInitialization(mode);
@@ -212,6 +216,13 @@ export class TyphoonService extends BaseDEXService {
   }
 
   /**
+   * Check if there's pending deposit data to save
+   */
+  hasPendingDepositData(): boolean {
+    return this.tempSdkData !== null;
+  }
+
+  /**
    * Save temporarily stored SDK data with transaction hash and wallet address
    * This method is called after transaction completion to persist deposit data
    */
@@ -364,6 +375,9 @@ export class TyphoonService extends BaseDEXService {
         this.sdk.init(depositData.secrets, depositData.nullifiers, depositData.pools);
         this.isInitialized = true;
         
+        // Add a small delay to ensure SDK is fully ready
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         console.log('✅ SDK properly re-initialized with deposit data');
         
         // Verify SDK state after initialization
@@ -436,8 +450,16 @@ export class TyphoonService extends BaseDEXService {
       console.log('🚀 Initiating sdk.withdraw() call...');
       const startTime = Date.now();
       try {
+        // Ensure we're passing the correct format for the SDK
+        // The SDK needs the transaction hash WITH the 0x prefix for BigInt conversion
+        const formattedTxHash = withdrawRequest.transactionHash.startsWith('0x') 
+          ? withdrawRequest.transactionHash 
+          : `0x${withdrawRequest.transactionHash}`;
+        
+        console.log('📝 Formatted transaction hash for SDK:', formattedTxHash);
+        
         const result = await this.sdk.withdraw(
-          withdrawRequest.transactionHash,
+          formattedTxHash,
           withdrawRequest.recipientAddresses
         );
         const duration = Date.now() - startTime;
@@ -479,6 +501,16 @@ export class TyphoonService extends BaseDEXService {
         }
         if (typeof this.sdk.withdraw !== 'function') {
           console.error('  ⚠️ Withdraw method not available');
+        }
+        
+        // Check if this is a known SDK issue
+        const errorMsg = sdkError instanceof Error ? sdkError.message : String(sdkError);
+        if (errorMsg.includes('filter') || errorMsg.includes('undefined')) {
+          console.error('  ⚠️ SDK internal error - likely missing on-chain data or pool state issue');
+          console.error('  ℹ️ This can happen if:');
+          console.error('    - The deposit transaction hasn\'t been fully confirmed');
+          console.error('    - The pool state on-chain is different from when deposit was made');
+          console.error('    - The SDK is unable to fetch required on-chain data');
         }
         console.groupEnd();
         

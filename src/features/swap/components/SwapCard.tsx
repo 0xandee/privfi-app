@@ -120,7 +120,7 @@ export const SwapCard: React.FC<SwapCardProps> = ({
           onTokenChange={onFromTokenChange}
           showPercentageButtons={true}
           percentageButtons={percentageButtons}
-          onPercentageClick={(percentage) => onPercentageClick(percentage, fromTokenBalance.balance)}
+          onPercentageClick={(percentage) => onPercentageClick(percentage, fromTokenBalance.rawFormatted)}
           disableSync={isEstimatingAfterSwap}
         />
 
