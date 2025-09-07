@@ -3,7 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '@/shared/compo
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip';
 import { Input } from '@/shared/components/ui/input';
 import { Button } from '@/shared/components/ui/button';
-import { Info, User } from 'lucide-react';
+import { Info, User, Edit3 } from 'lucide-react';
 import { useSwapStore } from '../store/swapStore';
 
 interface TransactionDetailsProps {
@@ -34,7 +34,16 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
   walletAddress,
 }) => {
   const { privacy, setRecipientAddress } = useSwapStore();
-  const [tempAddress, setTempAddress] = useState(privacy.recipientAddress || '');
+  const [tempAddress, setTempAddress] = useState(privacy.recipientAddress || walletAddress || '');
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Update tempAddress when wallet connects/disconnects or changes
+  React.useEffect(() => {
+    if (!privacy.recipientAddress && walletAddress) {
+      setTempAddress(walletAddress);
+      setRecipientAddress(walletAddress);
+    }
+  }, [walletAddress, privacy.recipientAddress, setRecipientAddress]);
 
   const presetSlippages = [0, 0.1, 0.5, 1];
 
@@ -83,19 +92,30 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
     if (walletAddress) {
       setTempAddress(walletAddress);
       setRecipientAddress(walletAddress);
+      setIsEditing(false);
     }
   };
 
-  const displayAddress = privacy.recipientAddress || tempAddress || '';
+  const handleEditClick = () => {
+    setIsEditing(true);
+  };
+
+  const handleInputFocus = () => {
+    setIsEditing(true);
+  };
+
+  const handleInputBlur = () => {
+    setIsEditing(false);
+  };
+
+  const displayAddress = tempAddress || walletAddress || '';
   const truncatedAddress = displayAddress 
-    ? displayAddress.length > 20
-      ? `${displayAddress.slice(0, 8)}...${displayAddress.slice(-8)}`
+    ? displayAddress.length > 16
+      ? `${displayAddress.slice(0, 6)}...${displayAddress.slice(-4)}`
       : displayAddress
     : '';
   
-  const placeholderText = walletAddress 
-    ? `${walletAddress.slice(0, 8)}...${walletAddress.slice(-8)} (default)`
-    : 'Enter recipient address';
+  const placeholderText = !displayAddress ? 'Enter recipient address' : '';
 
   return (
     <>
@@ -166,22 +186,41 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
         <div className="transaction-detail">
           <span className="transaction-detail-label">Recipient Address</span>
           <div className="flex items-center gap-2">
-            <Input
-              type="text"
-              placeholder={placeholderText}
-              value={tempAddress}
-              onChange={(e) => handleAddressChange(e.target.value)}
-              className="h-8 px-2 py-1 bg-token-selector border-0 focus:ring-0 shadow-none text-xs font-medium min-w-0 flex-1"
-            />
-            {walletAddress && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleUseWallet}
-                className="h-6 px-2 text-xs text-gray-400 hover:text-white"
-              >
-                Use Wallet
-              </Button>
+            {!isEditing && displayAddress ? (
+              <Tooltip delayDuration={200}>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2 flex-1">
+                    <span 
+                      className="transaction-detail-value cursor-pointer hover:text-white transition-colors"
+                      onClick={handleEditClick}
+                    >
+                      {truncatedAddress}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleEditClick}
+                      className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+                    >
+                      <Edit3 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <span className="text-xs break-all">{displayAddress}</span>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <Input
+                type="text"
+                placeholder={placeholderText}
+                value={tempAddress}
+                onChange={(e) => handleAddressChange(e.target.value)}
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
+                className="h-8 px-2 py-1 bg-token-selector border-0 focus:ring-0 shadow-none text-xs font-medium min-w-0 flex-1"
+                autoFocus={isEditing}
+              />
             )}
           </div>
         </div>
