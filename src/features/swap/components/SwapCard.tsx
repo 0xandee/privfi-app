@@ -46,6 +46,8 @@ interface SwapCardProps {
   onResetSwap?: () => void;
   // Estimating state
   isEstimatingAfterSwap?: boolean;
+  // Direction swap state
+  isSwappingDirection?: boolean;
 }
 
 export const SwapCard: React.FC<SwapCardProps> = ({
@@ -82,6 +84,8 @@ export const SwapCard: React.FC<SwapCardProps> = ({
   onResetSwap,
   // Estimating state
   isEstimatingAfterSwap = false,
+  // Direction swap state
+  isSwappingDirection = false,
 }) => {
 
   // Fetch balances for selected tokens
@@ -169,22 +173,46 @@ export const SwapCard: React.FC<SwapCardProps> = ({
             />
           )}
 
-          {/* Transaction Details with quote data */}
-          {formattedQuote && selectedQuote && !quotesError && (
-            <TransactionDetails
-              rate={formattedQuote.exchangeRate}
-              rateWithUsd={formattedQuote.exchangeRateWithUsd}
-              integratorFee={formattedQuote.integratorFee}
-              integratorFeesBps={selectedQuote.integratorFeesBps}
-              avnuFee={formattedQuote.avnuFee}
-              avnuFeesBps={selectedQuote.avnuFeesBps}
-              minReceived={minReceived}
-              slippage={slippage}
-              onSlippageChange={onSlippageChange}
-              toTokenSymbol={toToken.symbol}
-              walletAddress={walletAddress}
-            />
-          )}
+          {/* Always show TransactionDetails to prevent flickering */}
+          <TransactionDetails
+            rate={
+              formattedQuote && selectedQuote && !quotesError
+                ? formattedQuote.exchangeRate
+                : isLoadingQuotes || isSwappingDirection
+                ? "Loading..."
+                : "Loading..."
+            }
+            rateWithUsd={
+              formattedQuote && selectedQuote && !quotesError
+                ? formattedQuote.exchangeRateWithUsd
+                : ""
+            }
+            integratorFee={
+              formattedQuote && selectedQuote && !quotesError
+                ? formattedQuote.integratorFee
+                : "0"
+            }
+            integratorFeesBps={
+              selectedQuote && !quotesError
+                ? selectedQuote.integratorFeesBps
+                : 15
+            }
+            avnuFee={
+              formattedQuote && selectedQuote && !quotesError
+                ? formattedQuote.avnuFee
+                : "0"
+            }
+            avnuFeesBps={
+              selectedQuote && !quotesError
+                ? selectedQuote.avnuFeesBps
+                : 0
+            }
+            minReceived={minReceived}
+            slippage={slippage}
+            onSlippageChange={onSlippageChange}
+            toTokenSymbol={toToken.symbol}
+            walletAddress={walletAddress}
+          />
         </>
       )}
 
@@ -218,6 +246,12 @@ export const SwapCard: React.FC<SwapCardProps> = ({
         >
           {(() => {
             if (!isValidTokenPair) return 'Select Different Tokens';
+            if (isLoadingQuotes) return (
+              <div className="flex items-center gap-2">
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                <span>Getting best quotes...</span>
+              </div>
+            );
             if (exceedsBalance) return `Insufficient ${fromToken.symbol} Balance`;
             if (isQuoteExpired) return 'Quote Expired - Refresh';
             if (quotesError && fromAmount && parseFloat(fromAmount) > 0) return 'Quote Error';
@@ -236,12 +270,6 @@ export const SwapCard: React.FC<SwapCardProps> = ({
               <div className="flex items-center gap-2">
                 <RefreshCw className="h-4 w-4 animate-spin" />
                 <span>Executing swap...</span>
-              </div>
-            );
-            if (isLoadingQuotes) return (
-              <div className="flex items-center gap-2">
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                <span>Getting best quotes...</span>
               </div>
             );
             if (fromAmount && parseFloat(fromAmount) > 0 && isValidTokenPair && !selectedQuote) return 'No Quote Available';

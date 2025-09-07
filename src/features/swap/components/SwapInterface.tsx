@@ -81,6 +81,8 @@ const SwapInterface = () => {
             onResetSwap={swapForm.resetSwap}
             // Estimating state
             isEstimatingAfterSwap={swapForm.isEstimatingAfterSwap}
+            // Direction swap state
+            isSwappingDirection={swapForm.isSwappingDirection}
           />
         </SwapErrorBoundary>
       </div>

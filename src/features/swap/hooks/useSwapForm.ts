@@ -325,6 +325,7 @@ export const useSwapForm = (walletAddress?: string) => {
     slippage,
     minReceived,
     isEstimatingAfterSwap,
+    isSwappingDirection,
 
     // Quote data
     quotes: swapQuotes.quotes,
