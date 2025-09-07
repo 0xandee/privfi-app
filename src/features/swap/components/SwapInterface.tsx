@@ -14,7 +14,7 @@ const SwapInterface = () => {
 
   return (
     <div className="min-h-screen bg-background p-4 flex flex-col items-center justify-center">
-      <div className="w-full max-w-lg bg-[#1C1C1C] rounded-xl p-6">
+      <div className="w-full max-w-lg bg-[#1C1C1C] rounded-xl p-3 sm:p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <span className="text-lg font-medium text-white">Private Swap</span>
@@ -91,8 +91,8 @@ const SwapInterface = () => {
 
       {/* Transaction Processing Warning */}
       {(
-        <div className="flex items-center justify-center gap-2 text-xs p-3">
-          <span className="text-gray-400">Do not refresh or close this page while transaction is processing</span>
+        <div className="flex items-center justify-center gap-2 text-xs px-24 py-3 sm:p-3">
+          <span className="text-gray-400 text-center">Do not refresh or close this page while transaction is processing</span>
         </div>
       )}
     </div>
