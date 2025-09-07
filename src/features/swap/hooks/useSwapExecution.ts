@@ -43,6 +43,7 @@ export const useSwapExecution = ({
   const errorToastShownRef = useRef<string | null>(null);
   const withdrawalInitiatedRef = useRef<string | null>(null); // Track which transaction has withdrawal initiated
   const processedTransactionRef = useRef<string | null>(null); // Track processed transactions
+  const isTransitioningToWalletRef = useRef<boolean>(false); // Track transition to wallet interaction
 
   const updateProgress = useCallback((progress: SwapProgress | undefined) => {
     setExecutionProgress(progress);
@@ -159,14 +160,33 @@ export const useSwapExecution = ({
 
   // Update execution state based on transaction status
   useEffect(() => {
+    // Safely access current progress from store to avoid dependency issues
+    const currentProgress = executionState.progress;
+    console.log('[SWAP_STATE_DEBUG] Transaction status changed:', {
+      status,
+      isLoading: executionState.isLoading,
+      hasProgress: !!currentProgress,
+      currentPhase: currentProgress?.phase,
+      isTransitioning: isTransitioningToWalletRef.current,
+      timestamp: new Date().toISOString()
+    });
+    
     switch (status) {
       case 'idle':
-        if (executionState.isLoading) {
+        // Don't clear progress if we're transitioning to wallet interaction
+        if (executionState.isLoading && !isTransitioningToWalletRef.current) {
+          console.log('[SWAP_STATE_DEBUG] Transaction idle - clearing execution state');
           setExecutionState(prev => ({
             ...prev,
             isLoading: false,
           }));
           setExecuting(false);
+          // Only clear progress if not in awaiting-signature phase during transition
+          if (!currentProgress || currentProgress.phase !== 'awaiting-signature') {
+            updateProgress(undefined);
+          }
+        } else if (isTransitioningToWalletRef.current) {
+          console.log('[SWAP_STATE_DEBUG] Transaction idle but protecting transition state, keeping progress');
         }
         break;
       case 'pending':
@@ -420,8 +440,18 @@ export const useSwapExecution = ({
           startedAt: now4
         });
 
+        // Set transition flag to protect awaiting-signature state
+        console.log('[SWAP_STATE_DEBUG] Protecting awaiting-signature state during wallet transition');
+        isTransitioningToWalletRef.current = true;
+
         // Execute the multicall transaction (swap + deposit)
         sendTransaction(allCalls);
+        
+        // Clear transition flag after brief delay to allow wallet to open
+        setTimeout(() => {
+          isTransitioningToWalletRef.current = false;
+          console.log('[SWAP_STATE_DEBUG] Transition protection cleared');
+        }, 500);
         
       } catch (typhoonError) {
         console.group('⚠️ Typhoon Fallback Activated');
@@ -444,9 +474,19 @@ export const useSwapExecution = ({
           startedAt: now5
         });
 
+        // Set transition flag to protect awaiting-signature state
+        console.log('[SWAP_STATE_DEBUG] Protecting awaiting-signature state during fallback wallet transition');
+        isTransitioningToWalletRef.current = true;
+
         // Execute regular swap without deposit calls
         console.log('🔄 Executing regular swap fallback...');
         sendTransaction(buildResponse.calls);
+        
+        // Clear transition flag after brief delay to allow wallet to open
+        setTimeout(() => {
+          isTransitioningToWalletRef.current = false;
+          console.log('[SWAP_STATE_DEBUG] Fallback transition protection cleared');
+        }, 500);
       }
       
     } catch (error) {
@@ -488,6 +528,7 @@ export const useSwapExecution = ({
     errorToastShownRef.current = null; // Reset error toast tracking
     withdrawalInitiatedRef.current = null; // Reset withdrawal tracking
     processedTransactionRef.current = null; // Reset transaction processing tracking
+    isTransitioningToWalletRef.current = false; // Reset transition tracking
     resetTransaction();
   }, [resetTransaction, setExecuting, updateProgress]);
 
