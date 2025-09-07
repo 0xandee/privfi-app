@@ -46,25 +46,62 @@ export const useSwapExecution = ({
   const isTransitioningToWalletRef = useRef<boolean>(false); // Track transition to wallet interaction
   const lastPhaseRef = useRef<string | null>(null); // Track last phase to prevent duplicates
   const lastMessageRef = useRef<string | null>(null); // Track last message to prevent duplicates
+  const withdrawalCompletedRef = useRef<string | null>(null); // Track completed withdrawals
+  const progressClearTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Track progress clear timeouts
 
   const updateProgress = useCallback((progress: SwapProgress | undefined) => {
     // Prevent duplicate phase transitions (check both phase and message)
-    if (progress?.phase && progress?.message && 
-        lastPhaseRef.current === progress.phase && 
-        lastMessageRef.current === progress.message) {
+    if (progress?.phase && progress?.message &&
+      lastPhaseRef.current === progress.phase &&
+      lastMessageRef.current === progress.message) {
       return;
     }
-    
+
+    // Log progress updates
+    const timestamp = new Date().toISOString();
+    if (progress) {
+      console.log(`[${timestamp}] Swap Progress Update:`, {
+        previousPhase: lastPhaseRef.current,
+        previousMessage: lastMessageRef.current,
+        newPhase: progress.phase,
+        newMessage: progress.message,
+        estimatedTimeMs: progress.estimatedTimeMs,
+        startedAt: progress.startedAt,
+        elapsedMs: progress.startedAt ? Date.now() - progress.startedAt : null
+      });
+    } else {
+      console.log(`[${timestamp}] Swap Progress Cleared:`, {
+        previousPhase: lastPhaseRef.current,
+        previousMessage: lastMessageRef.current,
+        reason: 'Progress set to undefined'
+      });
+    }
+
     if (progress?.phase) {
       lastPhaseRef.current = progress.phase;
     }
     if (progress?.message) {
       lastMessageRef.current = progress.message;
     }
-    
+
     setExecutionProgress(progress);
     setExecutionState(prev => ({ ...prev, progress }));
   }, [setExecutionProgress]);
+
+  // Helper function to schedule progress clearing with timeout management
+  const scheduleProgressClear = useCallback((delayMs: number) => {
+    // Clear any existing timeout
+    if (progressClearTimeoutRef.current) {
+      clearTimeout(progressClearTimeoutRef.current);
+      progressClearTimeoutRef.current = null;
+    }
+    
+    // Schedule new timeout
+    progressClearTimeoutRef.current = setTimeout(() => {
+      updateProgress(undefined);
+      progressClearTimeoutRef.current = null;
+    }, delayMs);
+  }, [updateProgress]);
 
   const {
     send: sendTransaction,
@@ -100,7 +137,7 @@ export const useSwapExecution = ({
       const now = Date.now();
       updateProgress({
         phase: 'processing-withdrawal',
-        message: 'Processing private withdrawal...',
+        message: 'Processing withdrawal...',
         estimatedTimeMs: 47000, // Updated: was 45000ms, actual ~46200ms + buffer
         startedAt: now
       });
@@ -118,6 +155,9 @@ export const useSwapExecution = ({
       });
 
 
+      // Mark withdrawal as completed for this transaction
+      withdrawalCompletedRef.current = txHash;
+
       setExecutionState(prev => ({
         ...prev,
         withdrawalStatus: 'completed',
@@ -126,12 +166,12 @@ export const useSwapExecution = ({
 
       updateProgress({
         phase: 'completed',
-        message: 'Private swap and withdrawal completed!'
+        message: 'Swap and withdrawal completed!'
       });
 
-      setTimeout(() => updateProgress(undefined), 3000);
+      scheduleProgressClear(3000);
 
-      toast.success('Private withdrawal completed!', {
+      toast.success('Withdrawal completed!', {
         duration: 5000,
       });
     } catch (error) {
@@ -156,18 +196,27 @@ export const useSwapExecution = ({
   useEffect(() => {
     // Safely access current progress from store to avoid dependency issues
     const currentProgress = executionState.progress;
-    
+
     switch (status) {
       case 'idle':
-        // Don't clear progress if we're transitioning to wallet interaction
+        // Don't clear progress if we're transitioning to wallet interaction or still executing
         if (executionState.isLoading && !isTransitioningToWalletRef.current) {
-          setExecutionState(prev => ({
-            ...prev,
-            isLoading: false,
-          }));
-          setExecuting(false);
-          // Only clear progress if not in awaiting-signature phase during transition
-          if (!currentProgress || currentProgress.phase !== 'awaiting-signature') {
+          // Don't clear progress during execution phases that should continue
+          const isActivePhase = currentProgress && [
+            'preparing',
+            'building-swap', 
+            'generating-deposit',
+            'awaiting-signature',
+            'confirming',
+            'processing-withdrawal'
+          ].includes(currentProgress.phase);
+          
+          if (!isActivePhase) {
+            setExecutionState(prev => ({
+              ...prev,
+              isLoading: false,
+            }));
+            setExecuting(false);
             updateProgress(undefined);
           }
         }
@@ -181,8 +230,9 @@ export const useSwapExecution = ({
           error: null,
         }));
         setExecuting(true);
-        
-        {
+
+        // Only update progress if we're not already in awaiting-signature phase
+        if (currentProgress?.phase !== 'awaiting-signature') {
           const now = Date.now();
           updateProgress({
             phase: 'awaiting-signature',
@@ -203,27 +253,27 @@ export const useSwapExecution = ({
           transactionHash: txHash,
           withdrawalStatus: 'pending',
         }));
-        
+
         // Phase 1: Blockchain confirmation only
         const now = Date.now();
-        
+
         updateProgress({
           phase: 'confirming',
-          message: 'Transaction confirming on blockchain...',
+          message: 'Transaction confirming...',
           estimatedTimeMs: 3000, // Updated: Only blockchain confirmation, not withdrawal
           startedAt: now
         });
-        
+
         // For private swaps, save SDK data with transaction hash first, then initiate withdrawal
         // Only do this if we haven't already processed this transaction and we have pending deposit data
-        if (txHash && executionState.isPrivateSwap && address && 
-            processedTransactionRef.current !== txHash && 
-            withdrawalInitiatedRef.current !== txHash) {
+        if (txHash && executionState.isPrivateSwap && address &&
+          processedTransactionRef.current !== txHash &&
+          withdrawalInitiatedRef.current !== txHash) {
           // Mark transaction as processed to prevent re-processing
           processedTransactionRef.current = txHash;
           // Check if we have pending deposit data to save
           const hasPendingData = typhoonService.hasPendingDepositData();
-          
+
           if (hasPendingData) {
             // Save the SDK data with the transaction hash for future withdrawal
             typhoonService.saveDepositDataWithTxHash(txHash, address).then(() => {
@@ -242,21 +292,21 @@ export const useSwapExecution = ({
               handlePrivateWithdrawal(txHash);
             }, 3000);
           }
-        } else if (txHash && !executionState.isPrivateSwap) {
-          // Regular swap completion
+        } else if (txHash && !executionState.isPrivateSwap && withdrawalCompletedRef.current !== txHash) {
+          // Regular swap completion - only if no withdrawal was completed for this transaction
           setTimeout(() => {
             updateProgress({
               phase: 'completed',
               message: 'Swap completed successfully!'
             });
-            setTimeout(() => updateProgress(undefined), 3000);
+            scheduleProgressClear(3000);
           }, 2000);
         }
-        
+
         // Show success toast (only once per transaction)
         if (txHash && toastShownRef.current !== txHash) {
           toastShownRef.current = txHash;
-          toast.success(executionState.isPrivateSwap ? 'Private swap successful! Completing withdrawal...' : 'Swap successful!', {
+          toast.success(executionState.isPrivateSwap ? 'Swap successful! Starting withdrawal...' : 'Swap successful!', {
             duration: 8000, // 8 seconds
             action: {
               label: React.createElement('span', { className: 'flex items-center gap-1' }, [
@@ -279,10 +329,10 @@ export const useSwapExecution = ({
           error: errorMessage,
           transactionHash: null,
         }));
-        
+
         setExecuting(false);
         updateProgress(undefined);
-        
+
         // Show error toast (only once per error)
         if (errorToastShownRef.current !== errorMessage) {
           errorToastShownRef.current = errorMessage;
@@ -417,14 +467,14 @@ export const useSwapExecution = ({
 
         // Execute the multicall transaction (swap + deposit)
         sendTransaction(allCalls);
-        
+
         // Clear transition flag after brief delay to allow wallet to open
         setTimeout(() => {
           isTransitioningToWalletRef.current = false;
         }, 500);
-        
+
       } catch (typhoonError) {
-        
+
         // Fall back to regular swap without privacy layer
         toast.warning('Private swap unavailable, proceeding with regular swap', {
           description: 'Typhoon privacy service is temporarily unavailable',
@@ -444,13 +494,13 @@ export const useSwapExecution = ({
 
         // Execute regular swap without deposit calls
         sendTransaction(buildResponse.calls);
-        
+
         // Clear transition flag after brief delay to allow wallet to open
         setTimeout(() => {
           isTransitioningToWalletRef.current = false;
         }, 500);
       }
-      
+
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to execute swap';
       setExecutionState(prev => ({
@@ -460,10 +510,10 @@ export const useSwapExecution = ({
         error: errorMessage,
         transactionHash: null,
       }));
-      
+
       setExecuting(false);
       updateProgress(undefined);
-      
+
       if (errorToastShownRef.current !== errorMessage) {
         errorToastShownRef.current = errorMessage;
         toast.error('Swap failed!', {
@@ -493,6 +543,12 @@ export const useSwapExecution = ({
     isTransitioningToWalletRef.current = false; // Reset transition tracking
     lastPhaseRef.current = null; // Reset phase tracking
     lastMessageRef.current = null; // Reset message tracking
+    withdrawalCompletedRef.current = null; // Reset withdrawal completion tracking
+    // Clear any pending progress clear timeouts
+    if (progressClearTimeoutRef.current) {
+      clearTimeout(progressClearTimeoutRef.current);
+      progressClearTimeoutRef.current = null;
+    }
     resetTransaction();
   }, [resetTransaction, setExecuting, updateProgress]);
 
