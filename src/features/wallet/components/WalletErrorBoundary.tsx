@@ -34,9 +34,6 @@ interface WalletErrorBoundaryProps {
 
 export const WalletErrorBoundary: React.FC<WalletErrorBoundaryProps> = ({ children }) => {
   const handleError = (error: Error) => {
-    // Log wallet-specific errors
-    console.error('Wallet component error:', error);
-    
     // You could send this to an error tracking service
     // trackError('wallet', error);
   };

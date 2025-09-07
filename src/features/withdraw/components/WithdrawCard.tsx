@@ -18,29 +18,16 @@ const WithdrawCard: React.FC<WithdrawCardProps> = ({
   const withdraw = useWithdraw();
 
   const handleRecipientAddressChange = (id: string, address: string) => {
-    console.log('📝 Recipient address changed:', { id, address });
     withdraw.updateRecipient(id, { address });
   };
 
   const handleRecipientPercentageChange = (id: string, percentage: number) => {
-    console.log('📝 Recipient percentage changed:', { id, percentage });
     if (percentage >= 0 && percentage <= 100) {
       withdraw.updateRecipient(id, { percentage });
     }
   };
 
   const handleWithdrawClick = () => {
-    console.group('🔘 Withdraw Button Clicked');
-    console.log('Current withdraw state:');
-    console.log('  - Transaction hash:', withdraw.transactionHash);
-    console.log('  - Recipients:', withdraw.recipients);
-    console.log('  - Total percentage:', withdraw.totalPercentage);
-    console.log('  - Can execute:', withdraw.canExecute);
-    console.log('  - Is loading:', withdraw.isLoading);
-    console.log('  - Is connected:', isConnected);
-    console.log('  - Is percentage valid:', withdraw.isPercentageValid);
-    console.groupEnd();
-    
     withdraw.executeWithdraw();
   };
 
@@ -91,7 +78,6 @@ const WithdrawCard: React.FC<WithdrawCardProps> = ({
             placeholder="0x..."
             value={withdraw.transactionHash}
             onChange={(e) => {
-              console.log('🔗 Transaction hash changed:', e.target.value);
               withdraw.setTransactionHash(e.target.value);
             }}
             className="token-input"

@@ -106,7 +106,6 @@ export const TokenInput: React.FC<TokenInputProps> = ({
   useEffect(() => {
     // Skip syncing if disabled to prevent conflicts during swap direction
     if (disableSync) {
-      console.log(`TokenInput (${label}) skipping sync - disabled`);
       return;
     }
     

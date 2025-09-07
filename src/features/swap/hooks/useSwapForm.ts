@@ -180,8 +180,8 @@ export const useSwapForm = (walletAddress?: string) => {
           const reverseAmount = parseFloat(newFromAmount) / currentExchangeRate;
           estimatedToAmount = formatTokenAmountDisplay(reverseAmount, 8);
         }
-      } catch (error) {
-        console.warn('Failed to calculate reverse estimate:', error);
+      } catch {
+        // Ignore parsing errors, use default behavior
       }
     }
     

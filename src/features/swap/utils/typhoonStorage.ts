@@ -26,12 +26,6 @@ const STORAGE_KEY = 'privfi_typhoon_data';
  */
 export function saveTyphoonDepositData(data: TyphoonDepositData): void {
   try {
-    console.group('💾 Saving Typhoon Deposit Data');
-    console.log('Transaction Hash:', data.transactionHash);
-    console.log('Secrets length:', data.secrets?.length || 0);
-    console.log('Nullifiers length:', data.nullifiers?.length || 0);
-    console.log('Pools length:', data.pools?.length || 0);
-    
     const existing = getTyphoonStorageData();
     
     // Remove any existing entry with same transaction hash
@@ -44,13 +38,8 @@ export function saveTyphoonDepositData(data: TyphoonDepositData): void {
     };
     
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    console.log('✅ Typhoon data saved successfully');
-    console.log('Total deposits stored:', updated.deposits.length);
-    console.groupEnd();
-    
   } catch (error) {
-    console.error('❌ Failed to save Typhoon deposit data:', error);
-    console.groupEnd();
+    // Failed to save Typhoon deposit data
   }
 }
 
@@ -59,29 +48,10 @@ export function saveTyphoonDepositData(data: TyphoonDepositData): void {
  */
 export function loadTyphoonDepositData(transactionHash: string): TyphoonDepositData | null {
   try {
-    console.group('📂 Loading Typhoon Deposit Data');
-    console.log('Looking for transaction:', transactionHash);
-    
     const data = getTyphoonStorageData();
     const deposit = data.deposits.find(d => d.transactionHash === transactionHash);
-    
-    if (deposit) {
-      console.log('✅ Found deposit data');
-      console.log('Secrets length:', deposit.secrets?.length || 0);
-      console.log('Nullifiers length:', deposit.nullifiers?.length || 0);
-      console.log('Pools length:', deposit.pools?.length || 0);
-      console.log('Age:', Date.now() - deposit.timestamp, 'ms');
-    } else {
-      console.log('❌ No deposit data found for transaction');
-      console.log('Available deposits:', data.deposits.map(d => d.transactionHash));
-    }
-    
-    console.groupEnd();
     return deposit || null;
-    
   } catch (error) {
-    console.error('❌ Failed to load Typhoon deposit data:', error);
-    console.groupEnd();
     return null;
   }
 }
@@ -95,10 +65,6 @@ export function loadTyphoonDepositData(transactionHash: string): TyphoonDepositD
  */
 export function getAllTyphoonSdkData(): { secrets: any[], nullifiers: any[], pools: any[] } {
   try {
-    console.warn('⚠️ DEPRECATED: getAllTyphoonSdkData() combines multiple deposits');
-    console.warn('This can cause SDK state accumulation. Use loadTyphoonDepositData() instead.');
-    console.log('🔍 Getting all Typhoon SDK data (DEBUG/MIGRATION ONLY)');
-    
     const data = getTyphoonStorageData();
     
     // Combine all secrets, nullifiers, and pools from all deposits
@@ -112,20 +78,12 @@ export function getAllTyphoonSdkData(): { secrets: any[], nullifiers: any[], poo
       if (deposit.pools) allPools.push(...deposit.pools);
     });
     
-    console.log('Combined data:');
-    console.log('  - Total secrets:', allSecrets.length);
-    console.log('  - Total nullifiers:', allNullifiers.length);
-    console.log('  - Total pools:', allPools.length);
-    console.log('  - From deposits:', data.deposits.length);
-    
     return {
       secrets: allSecrets,
       nullifiers: allNullifiers,
       pools: allPools
     };
-    
   } catch (error) {
-    console.error('❌ Failed to get Typhoon SDK data:', error);
     return { secrets: [], nullifiers: [], pools: [] };
   }
 }
@@ -135,9 +93,6 @@ export function getAllTyphoonSdkData(): { secrets: any[], nullifiers: any[], poo
  */
 export function clearTyphoonDepositData(transactionHash: string): void {
   try {
-    console.group('🗑️ Clearing Typhoon Deposit Data');
-    console.log('Transaction Hash:', transactionHash);
-    
     const existing = getTyphoonStorageData();
     const filtered = existing.deposits.filter(d => d.transactionHash !== transactionHash);
     
@@ -147,14 +102,8 @@ export function clearTyphoonDepositData(transactionHash: string): void {
     };
     
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    
-    console.log('✅ Deposit data cleared');
-    console.log('Remaining deposits:', updated.deposits.length);
-    console.groupEnd();
-    
   } catch (error) {
-    console.error('❌ Failed to clear Typhoon deposit data:', error);
-    console.groupEnd();
+    // Failed to clear Typhoon deposit data
   }
 }
 
@@ -163,11 +112,9 @@ export function clearTyphoonDepositData(transactionHash: string): void {
  */
 export function clearAllTyphoonData(): void {
   try {
-    console.log('🧹 Clearing all Typhoon data');
     localStorage.removeItem(STORAGE_KEY);
-    console.log('✅ All Typhoon data cleared');
   } catch (error) {
-    console.error('❌ Failed to clear Typhoon data:', error);
+    // Failed to clear Typhoon data
   }
 }
 
@@ -189,7 +136,7 @@ function getTyphoonStorageData(): StoredTyphoonData {
       return JSON.parse(stored);
     }
   } catch (error) {
-    console.warn('Failed to parse Typhoon storage data:', error);
+    // Failed to parse Typhoon storage data
   }
   
   // Return default structure

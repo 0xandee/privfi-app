@@ -52,7 +52,6 @@ export const useSwapExecution = ({
     if (progress?.phase && progress?.message && 
         lastPhaseRef.current === progress.phase && 
         lastMessageRef.current === progress.message) {
-      console.log(`[SWAP_STATE_DEBUG] Skipping duplicate phase transition: ${progress.phase} - ${progress.message}`);
       return;
     }
     
@@ -80,13 +79,11 @@ export const useSwapExecution = ({
   const handlePrivateWithdrawal = useCallback(async (txHash: string) => {
     // Prevent duplicate withdrawal calls using ref to avoid circular dependency
     if (withdrawalInitiatedRef.current === txHash) {
-      console.log('⏸️ Withdrawal already initiated for transaction:', txHash);
       return;
     }
 
     // Check current withdrawal status from state
     if (executionState.withdrawalStatus === 'processing' || executionState.withdrawalStatus === 'completed') {
-      console.log('⏸️ Withdrawal already in progress or completed, skipping...');
       return;
     }
 
@@ -99,14 +96,6 @@ export const useSwapExecution = ({
         withdrawalStatus: 'processing',
       }));
 
-      // Log phase transition from confirming to withdrawal
-      console.log('[SWAP_PHASE_TRANSITION] Blockchain confirmed, starting withdrawal', {
-        fromPhase: 'confirming',
-        toPhase: 'processing-withdrawal',
-        txHash,
-        estimatedWithdrawalDuration: '47000ms',
-        timestamp: new Date().toISOString()
-      });
 
       const now = Date.now();
       updateProgress({
@@ -122,23 +111,12 @@ export const useSwapExecution = ({
         throw new Error('No recipient address available for withdrawal');
       }
 
-      console.log('[SWAP_WITHDRAWAL_PROGRESS] Starting SDK withdrawal process', {
-        stage: 'initializing',
-        txHash,
-        recipient,
-        timestamp: new Date().toISOString()
-      });
 
       await typhoonService.withdraw({
         transactionHash: txHash,
         recipientAddresses: [recipient],
       });
 
-      console.log('[SWAP_WITHDRAWAL_PROGRESS] SDK withdrawal completed successfully', {
-        stage: 'completed',
-        txHash,
-        timestamp: new Date().toISOString()
-      });
 
       setExecutionState(prev => ({
         ...prev,
@@ -157,7 +135,6 @@ export const useSwapExecution = ({
         duration: 5000,
       });
     } catch (error) {
-      console.error('Withdrawal failed:', error);
       setExecutionState(prev => ({
         ...prev,
         withdrawalStatus: 'failed',
@@ -179,20 +156,11 @@ export const useSwapExecution = ({
   useEffect(() => {
     // Safely access current progress from store to avoid dependency issues
     const currentProgress = executionState.progress;
-    console.log('[SWAP_STATE_DEBUG] Transaction status changed:', {
-      status,
-      isLoading: executionState.isLoading,
-      hasProgress: !!currentProgress,
-      currentPhase: currentProgress?.phase,
-      isTransitioning: isTransitioningToWalletRef.current,
-      timestamp: new Date().toISOString()
-    });
     
     switch (status) {
       case 'idle':
         // Don't clear progress if we're transitioning to wallet interaction
         if (executionState.isLoading && !isTransitioningToWalletRef.current) {
-          console.log('[SWAP_STATE_DEBUG] Transaction idle - clearing execution state');
           setExecutionState(prev => ({
             ...prev,
             isLoading: false,
@@ -202,8 +170,6 @@ export const useSwapExecution = ({
           if (!currentProgress || currentProgress.phase !== 'awaiting-signature') {
             updateProgress(undefined);
           }
-        } else if (isTransitioningToWalletRef.current) {
-          console.log('[SWAP_STATE_DEBUG] Transaction idle but protecting transition state, keeping progress');
         }
         break;
       case 'pending':
@@ -216,13 +182,15 @@ export const useSwapExecution = ({
         }));
         setExecuting(true);
         
-        const now = Date.now();
-        updateProgress({
-          phase: 'awaiting-signature',
-          message: 'Awaiting wallet signature...',
-          estimatedTimeMs: undefined, // No estimation - user dependent
-          startedAt: now
-        });
+        {
+          const now = Date.now();
+          updateProgress({
+            phase: 'awaiting-signature',
+            message: 'Awaiting wallet signature...',
+            estimatedTimeMs: undefined, // No estimation - user dependent
+            startedAt: now
+          });
+        }
         break;
       case 'success': {
         const txHash = transactionData?.transaction_hash || null;
@@ -238,13 +206,6 @@ export const useSwapExecution = ({
         
         // Phase 1: Blockchain confirmation only
         const now = Date.now();
-        console.log('[SWAP_PHASE_TRANSITION] Starting blockchain confirmation', {
-          phase: 'confirming',
-          txHash,
-          estimatedDuration: '3000ms',
-          timestamp: new Date().toISOString(),
-          isPrivateSwap: executionState.isPrivateSwap
-        });
         
         updateProgress({
           phase: 'confirming',
@@ -266,24 +227,18 @@ export const useSwapExecution = ({
           if (hasPendingData) {
             // Save the SDK data with the transaction hash for future withdrawal
             typhoonService.saveDepositDataWithTxHash(txHash, address).then(() => {
-              console.log('✅ Deposit data saved, waiting for confirmation phase...');
               // Wait for the confirming phase to complete (~3 seconds) before starting withdrawal
               setTimeout(() => {
-                console.log('[SWAP_PHASE_TRANSITION] Confirming phase complete, initiating withdrawal...');
                 handlePrivateWithdrawal(txHash);
               }, 3000);
             }).catch((error) => {
-              console.error('❌ Failed to save deposit data:', error);
               // Still attempt withdrawal in case data was already saved
               setTimeout(() => {
-                console.log('[SWAP_PHASE_TRANSITION] Confirming phase complete, initiating withdrawal (fallback)...');
                 handlePrivateWithdrawal(txHash);
               }, 3000);
             });
           } else {
-            console.log('📋 No pending deposit data to save, waiting for confirmation phase...');
             setTimeout(() => {
-              console.log('[SWAP_PHASE_TRANSITION] Confirming phase complete, proceeding with withdrawal...');
               handlePrivateWithdrawal(txHash);
             }, 3000);
           }
@@ -458,7 +413,6 @@ export const useSwapExecution = ({
         });
 
         // Set transition flag to protect awaiting-signature state
-        console.log('[SWAP_STATE_DEBUG] Protecting awaiting-signature state during wallet transition');
         isTransitioningToWalletRef.current = true;
 
         // Execute the multicall transaction (swap + deposit)
@@ -467,15 +421,9 @@ export const useSwapExecution = ({
         // Clear transition flag after brief delay to allow wallet to open
         setTimeout(() => {
           isTransitioningToWalletRef.current = false;
-          console.log('[SWAP_STATE_DEBUG] Transition protection cleared');
         }, 500);
         
       } catch (typhoonError) {
-        console.group('⚠️ Typhoon Fallback Activated');
-        console.warn('Typhoon service unavailable, falling back to regular swap');
-        console.warn('Original error:', typhoonError);
-        console.log('Proceeding with regular AVNU swap calls only');
-        console.groupEnd();
         
         // Fall back to regular swap without privacy layer
         toast.warning('Private swap unavailable, proceeding with regular swap', {
@@ -492,17 +440,14 @@ export const useSwapExecution = ({
         });
 
         // Set transition flag to protect awaiting-signature state
-        console.log('[SWAP_STATE_DEBUG] Protecting awaiting-signature state during fallback wallet transition');
         isTransitioningToWalletRef.current = true;
 
         // Execute regular swap without deposit calls
-        console.log('🔄 Executing regular swap fallback...');
         sendTransaction(buildResponse.calls);
         
         // Clear transition flag after brief delay to allow wallet to open
         setTimeout(() => {
           isTransitioningToWalletRef.current = false;
-          console.log('[SWAP_STATE_DEBUG] Fallback transition protection cleared');
         }, 500);
       }
       

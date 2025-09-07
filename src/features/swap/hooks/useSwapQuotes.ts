@@ -81,7 +81,6 @@ export const useSwapQuotes = ({
       // Convert to BigInt and then back to string
       return BigInt(fullNumberString).toString();
     } catch (error) {
-      console.error('Error converting amount to smallest unit:', error);
       // Fallback to original method for backwards compatibility
       return (parseFloat(amount) * Math.pow(10, decimals)).toString();
     }

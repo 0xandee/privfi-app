@@ -100,13 +100,6 @@ export const useWithdrawStore = create<WithdrawStore>()(
       executeWithdraw: async () => {
         const { transactionHash, recipients, withdrawService, setProgress } = get();
         
-        console.group('🏪 WithdrawStore.executeWithdraw');
-        console.log('Current state:');
-        console.log('  - Transaction hash:', transactionHash);
-        console.log('  - Recipients count:', recipients.length);
-        console.log('  - Recipients data:', recipients);
-        
-        console.log('Setting status to validating...');
         set({ 
           status: 'validating', 
           isLoading: true, 
@@ -115,7 +108,6 @@ export const useWithdrawStore = create<WithdrawStore>()(
         });
 
         try {
-          console.log('🔍 Phase 1: Preparing transaction...');
           setProgress({
             phase: 'preparing',
             message: 'Preparing withdrawal transaction...',
@@ -123,7 +115,6 @@ export const useWithdrawStore = create<WithdrawStore>()(
           });
           await new Promise(resolve => setTimeout(resolve, 500));
 
-          console.log('🔍 Phase 2: Validating transaction hash...');
           setProgress({
             phase: 'validating-hash',
             message: 'Validating transaction hash...',
@@ -133,10 +124,8 @@ export const useWithdrawStore = create<WithdrawStore>()(
           if (!withdrawService.validateTransactionHash(transactionHash)) {
             throw new Error('Invalid transaction hash format');
           }
-          console.log('✅ Transaction hash validation passed');
           await new Promise(resolve => setTimeout(resolve, 1000));
 
-          console.log('🔍 Phase 3: Validating recipients...');
           setProgress({
             phase: 'validating-recipients',
             message: 'Validating recipient addresses and percentages...',
@@ -147,10 +136,8 @@ export const useWithdrawStore = create<WithdrawStore>()(
           if (!validation.isValid) {
             throw new Error(validation.error);
           }
-          console.log('✅ Recipients validation passed');
           await new Promise(resolve => setTimeout(resolve, 800));
 
-          console.log('Setting status to executing...');
           set({ status: 'executing' });
 
           setProgress({
@@ -160,7 +147,6 @@ export const useWithdrawStore = create<WithdrawStore>()(
           });
           await new Promise(resolve => setTimeout(resolve, 1000));
 
-          console.log('🚀 Phase 4: Broadcasting transaction...');
           setProgress({
             phase: 'broadcasting',
             message: 'Broadcasting transaction to network...',
@@ -174,7 +160,6 @@ export const useWithdrawStore = create<WithdrawStore>()(
           
           await new Promise(resolve => setTimeout(resolve, 2000));
 
-          console.log('🔍 Phase 5: Confirming transaction...');
           setProgress({
             phase: 'confirming',
             message: 'Waiting for blockchain confirmation...',
@@ -182,13 +167,11 @@ export const useWithdrawStore = create<WithdrawStore>()(
           });
           await new Promise(resolve => setTimeout(resolve, 3000));
 
-          console.log('✅ Withdraw execution completed');
           setProgress({
             phase: 'completed',
             message: 'Withdrawal completed successfully!',
           });
 
-          console.log('Setting status to success...');
           set({ 
             status: 'success',
             isLoading: false,
@@ -203,7 +186,8 @@ export const useWithdrawStore = create<WithdrawStore>()(
                 React.createElement(CheckCircle, { key: 'icon', className: 'h-3 w-3' }),
                 'Success'
               ]),
-              onClick: () => console.log('Withdrawal success acknowledged'),
+              onClick: () => {},
+
             },
           });
           
@@ -211,14 +195,8 @@ export const useWithdrawStore = create<WithdrawStore>()(
             setProgress(undefined);
           }, 2000);
           
-          console.log('🎉 Withdraw process completed successfully!');
-          console.groupEnd();
 
         } catch (error) {
-          console.error('❌ Withdraw failed in WithdrawStore');
-          console.error('Error type:', error?.constructor?.name);
-          console.error('Error message:', error instanceof Error ? error.message : error);
-          console.error('Full error:', error);
           
           const errorMessage = error instanceof Error ? error.message : 'Withdraw failed';
           
@@ -235,8 +213,6 @@ export const useWithdrawStore = create<WithdrawStore>()(
             description: errorMessage,
             duration: 8000,
           });
-          
-          console.groupEnd();
         }
       },
 
