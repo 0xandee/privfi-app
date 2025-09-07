@@ -207,6 +207,7 @@ export const SwapCard: React.FC<SwapCardProps> = ({
             !isValidTokenPair ||
             !fromAmount ||
             parseFloat(fromAmount) <= 0 ||
+            isLoadingQuotes ||
             (fromAmount && parseFloat(fromAmount) > 0 && isValidTokenPair && !selectedQuote && !isLoadingQuotes) ||
             isQuoteExpired ||
             (quotesError && fromAmount && parseFloat(fromAmount) > 0) ||
