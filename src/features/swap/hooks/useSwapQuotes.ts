@@ -162,7 +162,6 @@ export const useSwapQuotes = ({
 
   // Clear quotes and reset state for swap direction
   const clearQuotes = useCallback(() => {
-    console.log('🗑️ Clearing quotes and resetting quote state');
     setSelectedQuote(null);
     setTimeToExpiry(0);
     queryClient.removeQueries({ queryKey });

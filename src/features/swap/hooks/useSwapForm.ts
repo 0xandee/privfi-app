@@ -95,7 +95,6 @@ export const useSwapForm = (walletAddress?: string) => {
     
     // Don't override toAmount during direction swap to allow proper clearing
     if (isSwappingDirection) {
-      console.log('⏳ Skipping toAmount update during direction swap');
       return;
     }
     
@@ -106,36 +105,14 @@ export const useSwapForm = (walletAddress?: string) => {
     if (currentQuote && 
         (normalizeAddress(currentQuote.sellTokenAddress) !== normalizeAddress(fromToken.address) || 
          normalizeAddress(currentQuote.buyTokenAddress) !== normalizeAddress(toToken.address))) {
-      console.log('⚠️ Quote token mismatch detected, skipping update:', {
-        quoteSellToken: currentQuote.sellTokenAddress,
-        quoteBuyToken: currentQuote.buyTokenAddress,
-        currentFromToken: fromToken.address,
-        currentToToken: toToken.address,
-        normalizedQuoteSell: normalizeAddress(currentQuote.sellTokenAddress),
-        normalizedQuoteBuy: normalizeAddress(currentQuote.buyTokenAddress),
-        normalizedFromToken: normalizeAddress(fromToken.address),
-        normalizedToToken: normalizeAddress(toToken.address),
-        outputAmount: outputAmount
-      });
       return;
     }
     
     
     if (outputAmount && fromAmount && parseFloat(fromAmount) > 0) {
-      console.log('📈 Setting toAmount from validated quote:', {
-        outputAmount: outputAmount,
-        fromAmount: fromAmount,
-        quoteSellToken: currentQuote?.sellTokenAddress?.slice(-6),
-        quoteBuyToken: currentQuote?.buyTokenAddress?.slice(-6),
-        fromTokenAddr: fromToken.address.slice(-6),
-        toTokenAddr: toToken.address.slice(-6),
-        tokensMatch: normalizeAddress(currentQuote?.sellTokenAddress || '') === normalizeAddress(fromToken.address) && 
-                     normalizeAddress(currentQuote?.buyTokenAddress || '') === normalizeAddress(toToken.address)
-      });
       setToAmount(outputAmount);
       setIsEstimatingAfterSwap(false); // Clear estimating flag when real quotes arrive
     } else if (!fromAmount || parseFloat(fromAmount) <= 0) {
-      console.log('🗑️ Clearing toAmount due to empty fromAmount');
       setToAmount('');
       setIsEstimatingAfterSwap(false);
     }
@@ -213,34 +190,15 @@ export const useSwapForm = (walletAddress?: string) => {
 
   // Swap direction function
   const handleSwapDirection = useCallback(() => {
-    console.log('🔄 SWAP DIRECTION BUTTON CLICKED');
-    console.log('📊 Current state before swap:');
-    console.log('  - fromToken:', fromToken.symbol, '(', fromToken.address, ')');
-    console.log('  - toToken:', toToken.symbol, '(', toToken.address, ')');
-    console.log('  - fromAmount:', fromAmount);
-    console.log('  - toAmount:', toAmount);
-    console.log('  - isUserInputting:', isUserInputting);
-    console.log('  - isEstimatingAfterSwap:', isEstimatingAfterSwap);
-    console.log('  - Current quotes loading:', swapQuotes.isLoading);
-    console.log('  - Current selected quote:', swapQuotes.selectedQuote ? 'EXISTS' : 'NULL');
-    console.log('  - Current outputAmount:', swapEstimation.outputAmount);
-    
     // Store current values
     const tempFromToken = fromToken;
     const tempFromAmount = fromAmount;
     const tempToAmount = toAmount;
     
-    console.log('💾 Stored temporary values:');
-    console.log('  - tempFromToken:', tempFromToken.symbol);
-    console.log('  - tempFromAmount:', tempFromAmount);
-    console.log('  - tempToAmount:', tempToAmount);
-    
     // CRITICAL: Clear quotes FIRST to prevent stale data issues
-    console.log('🗑️ Clearing all quotes and cache to prevent stale data...');
     swapQuotes.clearQuotes();
     
     // Use flushSync to ensure all state updates happen atomically
-    console.log('⚡ Using flushSync for atomic state updates...');
     flushSync(() => {
       // Set flag FIRST to prevent useEffect interference
       setIsSwappingDirection(true);
@@ -249,22 +207,16 @@ export const useSwapForm = (walletAddress?: string) => {
       setToAmount('');
       
       // Swap tokens
-      console.log('🔀 Swapping tokens atomically...');
       setFromToken(toToken);
       setToToken(tempFromToken);
-      console.log('  - New fromToken will be:', toToken.symbol);
-      console.log('  - New toToken will be:', tempFromToken.symbol);
     });
     
     // Second flushSync for amount handling
     flushSync(() => {
       // Swap amounts - use toAmount as new fromAmount
       if (tempToAmount && parseFloat(tempToAmount) > 0) {
-        console.log('💰 Swapping amounts (toAmount exists and > 0):');
-        console.log('  - Setting fromAmount to:', tempToAmount);
         setFromAmount(tempToAmount);
       } else {
-        console.log('💰 Clearing both amounts (toAmount empty or <= 0):');
         setFromAmount('');
       }
       
@@ -273,35 +225,10 @@ export const useSwapForm = (walletAddress?: string) => {
       setIsEstimatingAfterSwap(false);
     });
     
-    console.log('🔄 Atomic state updates complete');
-    
-    // Normalize addresses for comparison
-    const normalizeAddress = (addr: string) => addr.toLowerCase().replace(/^0x0+/, '0x');
-    
-    console.log('📈 Quote validation:', {
-      hasOldQuote: !!swapEstimation.quote,
-      oldQuoteSellToken: swapEstimation.quote?.sellTokenAddress,
-      oldQuoteBuyToken: swapEstimation.quote?.buyTokenAddress,
-      newFromToken: toToken.address,
-      newToToken: tempFromToken.address,
-      tokensMatch: normalizeAddress(swapEstimation.quote?.sellTokenAddress || '') === normalizeAddress(toToken.address) && 
-                   normalizeAddress(swapEstimation.quote?.buyTokenAddress || '') === normalizeAddress(tempFromToken.address)
-    });
-    
     // Reset the swapping direction flag after longer delay (500ms instead of 100ms)
     setTimeout(() => {
-      console.log('🔓 Resetting isSwappingDirection flag - toAmount can now be updated by new quotes');
       setIsSwappingDirection(false);
     }, 500);
-    
-    console.log('✅ SWAP DIRECTION COMPLETE - React Query should now fetch new quotes automatically');
-    console.log('📈 Expected next steps:');
-    console.log('  1. Old quotes cleared, no stale data');
-    console.log('  2. useSwapQuotes hook will detect token/amount changes');
-    console.log('  3. React Query will fetch NEW quotes for swapped pair');
-    console.log('  4. After 500ms delay, toAmount can be updated by new quotes');
-    console.log('  5. UI will update with correct quote data');
-    console.log('---');
   }, [fromToken, toToken, fromAmount, toAmount, isUserInputting, isEstimatingAfterSwap, swapQuotes, swapEstimation]);
 
   const handleSwap = useCallback(() => {
