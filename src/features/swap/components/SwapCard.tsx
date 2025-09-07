@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ArrowUpDown, RefreshCw } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { TokenInput } from './TokenInput';
 import { TransactionDetails } from './TransactionDetails';
 import { LoadingButton } from '@/shared/components/ui/loading-button';
@@ -9,6 +10,7 @@ import { ErrorMessage } from '@/shared/components/ui/error-message';
 import { AVNUQuote, formatQuoteForDisplay, extractTokenPricesFromQuote } from '../services/avnu';
 import { useSwapStore } from '../store/swapStore';
 import { useTimeEstimation } from '../hooks/useTimeEstimation';
+import { useAnimations } from '@/shared/hooks/useAnimations';
 
 interface SwapCardProps {
   fromAmount: string;
@@ -87,6 +89,8 @@ export const SwapCard: React.FC<SwapCardProps> = ({
   // Direction swap state
   isSwappingDirection = false,
 }) => {
+  const { variants, transitions } = useAnimations();
+  const [swapRotation, setSwapRotation] = useState(0);
 
   // Fetch balances for selected tokens
   const fromTokenBalance = useTokenBalance(fromToken, walletAddress);
@@ -112,8 +116,14 @@ export const SwapCard: React.FC<SwapCardProps> = ({
   // Use time estimation hook for real-time countdown
   const { formattedRemainingTime } = useTimeEstimation(executionProgress);
 
+  // Handle swap direction with animation
+  const handleSwapDirection = () => {
+    setSwapRotation(prev => prev + 180);
+    onSwapDirection();
+  };
+
   return (
-    <div>
+    <div className={transitions.default}>
       {/* Main Swap Card */}
       <div className="crypto-card px-4 py-6">
         {/* From Token Section */}
@@ -136,12 +146,21 @@ export const SwapCard: React.FC<SwapCardProps> = ({
         <div className="relative flex justify-center py-2 -mx-6 mt-4">
           {/* Separator line going through button */}
           <div className="absolute top-1/2 left-0 right-0 h-1 bg-[#1C1C1C] transform -translate-y-1/2"></div>
-          <button
-            onClick={onSwapDirection}
-            className="w-10 h-10 bg-[#1C1C1C] text-percentage-button-foreground rounded-md hover:bg-percentage-button-hover transition-colors cursor-pointer text-sm font-medium relative z-10 flex items-center justify-center"
+          <motion.button
+            onClick={handleSwapDirection}
+            className={`w-10 h-10 bg-[#1C1C1C] text-percentage-button-foreground rounded-md hover:bg-percentage-button-hover cursor-pointer text-sm font-medium relative z-10 flex items-center justify-center ${transitions.colors} ${transitions.transform}`}
+            whileTap={!isSwappingDirection ? { scale: 0.95 } : {}}
+            animate={{ opacity: isSwappingDirection ? 0.5 : 1 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            disabled={isSwappingDirection}
           >
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
+            <motion.div
+              animate={{ rotate: swapRotation }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+            >
+              <ArrowUpDown className="h-4 w-4" />
+            </motion.div>
+          </motion.button>
         </div>
 
         {/* To Token Section */}

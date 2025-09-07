@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/shared/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip';
 import { Input } from '@/shared/components/ui/input';
 import { Button } from '@/shared/components/ui/button';
 import { Info, User, Edit3, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSwapStore } from '../store/swapStore';
+import { useAnimations } from '@/shared/hooks/useAnimations';
+import { AnimatedNumber } from '@/shared/components/ui/animated-number';
 
 interface TransactionDetailsProps {
   rate?: string;
@@ -33,6 +36,7 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
   toTokenSymbol = "",
   walletAddress,
 }) => {
+  const { variants, transitions, hover } = useAnimations();
   const { privacy, setRecipientAddress } = useSwapStore();
   const [tempAddress, setTempAddress] = useState(privacy.recipientAddress || walletAddress || '');
   const [isEditing, setIsEditing] = useState(false);
@@ -124,39 +128,55 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
 
   return (
     <>
-      <div className="crypto-card px-4 py-4 mt-4">
+      <motion.div 
+        className="crypto-card px-4 py-4 mt-4"
+        variants={variants.slideUp}
+        initial="initial"
+        animate="animate"
+      >
         {/* Header with rate and toggle button */}
         <div className="flex justify-between items-center">
-          <div className="transaction-detail-value text-sm">
-            {rateWithUsd ? (
-              <>
-                {rateWithUsd.split(' (')[0]}{' '}
-                <span className="text-transaction-detail">({rateWithUsd.split(' (')[1]}</span>
-              </>
-            ) : (
-              rate
-            )}
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleToggleExpand}
-            className="flex items-center gap-2 h-8 px-2 text-gray-400 hover:text-white transition-colors"
+          <AnimatedNumber
+            value={rateWithUsd ? (
+              rateWithUsd.split(' (')[0] + ' (' + rateWithUsd.split(' (')[1]
+            ) : rate}
+            className="transaction-detail-value text-sm"
+          />
+          <motion.div
+            whileTap={{ scale: 0.95 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
           >
-            <span className="text-xs text-transaction-detail">
-              {isExpanded ? 'Hide details' : 'Show details'}
-            </span>
-            {isExpanded ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleToggleExpand}
+              className={`flex items-center gap-2 h-8 px-2 text-gray-400 hover:text-white ${transitions.colors}`}
+            >
+              <span className="text-xs text-transaction-detail">
+                {isExpanded ? 'Hide details' : 'Show details'}
+              </span>
+              <motion.div
+                animate={{ rotate: isExpanded ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ChevronDown className="h-4 w-4" />
+              </motion.div>
+            </Button>
+          </motion.div>
         </div>
 
         {/* Collapsible content */}
-        {isExpanded && (
-          <div className="mt-4 space-y-4">
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div 
+              className="mt-4 space-y-4"
+              variants={variants.expand}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              style={{ overflow: 'hidden' }}
+            >
             <div className="transaction-detail">
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
@@ -182,12 +202,12 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
                   </div>
                 </TooltipContent>
               </Tooltip>
-              <span className="transaction-detail-value">${totalFeeAmount}</span>
+              <AnimatedNumber value={`$${totalFeeAmount}`} className="transaction-detail-value" />
             </div>
 
             <div className="transaction-detail">
               <span className="transaction-detail-label">Min Received</span>
-              <span className="transaction-detail-value">{minReceived} {toTokenSymbol}</span>
+              <AnimatedNumber value={`${minReceived} ${toTokenSymbol}`} className="transaction-detail-value" />
             </div>
 
             <div className="transaction-detail">
@@ -247,10 +267,11 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
                 )}
               </div>
             </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      </div>
+      </motion.div>
     </>
   );
 };
