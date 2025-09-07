@@ -3,7 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '@/shared/compo
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip';
 import { Input } from '@/shared/components/ui/input';
 import { Button } from '@/shared/components/ui/button';
-import { Info, User, Edit3 } from 'lucide-react';
+import { Info, User, Edit3, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSwapStore } from '../store/swapStore';
 
 interface TransactionDetailsProps {
@@ -36,6 +36,7 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
   const { privacy, setRecipientAddress } = useSwapStore();
   const [tempAddress, setTempAddress] = useState(privacy.recipientAddress || walletAddress || '');
   const [isEditing, setIsEditing] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Update tempAddress when wallet connects/disconnects or changes
   React.useEffect(() => {
@@ -83,6 +84,10 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
     onSlippageChange?.(value);
   };
 
+  const handleToggleExpand = () => {
+    setIsExpanded(!isExpanded);
+  };
+
   const handleAddressChange = (value: string) => {
     setTempAddress(value);
     setRecipientAddress(value);
@@ -119,10 +124,10 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
 
   return (
     <>
-      <div className="crypto-card px-4 py-6 mt-4 space-y-4">
-        <div className="transaction-detail">
-          <span className="transaction-detail-label">Rate</span>
-          <span className="transaction-detail-value">
+      <div className="crypto-card px-4 py-4 mt-4">
+        {/* Header with rate and toggle button */}
+        <div className="flex justify-between items-center">
+          <div className="transaction-detail-value text-sm">
             {rateWithUsd ? (
               <>
                 {rateWithUsd.split(' (')[0]}{' '}
@@ -131,99 +136,119 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
             ) : (
               rate
             )}
-          </span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleToggleExpand}
+            className="flex items-center gap-2 h-8 px-2 text-gray-400 hover:text-white transition-colors"
+          >
+            <span className="text-xs text-transaction-detail">
+              {isExpanded ? 'Hide details' : 'Show details'}
+            </span>
+            {isExpanded ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </Button>
         </div>
 
-        <div className="transaction-detail">
-          <Tooltip delayDuration={200}>
-            <TooltipTrigger asChild>
-              <span className="transaction-detail-label flex items-center gap-1 cursor-pointer">
-                Platform Fees ({totalFeesPercentage}%)
-                <Info className="h-3 w-3 text-gray-400" />
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="w-32">
-              <div className="space-y-1 text-xs">
-                <div className="flex justify-between">
-                  <span>Privfi</span>
-                  <span>0.15%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>AVNU</span>
-                  <span>{(avnuBpsValue / 100).toFixed(2)}%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Typhoon</span>
-                  <span>0.50%</span>
-                </div>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-          <span className="transaction-detail-value">${totalFeeAmount}</span>
-        </div>
-
-        <div className="transaction-detail">
-          <span className="transaction-detail-label">Min Received</span>
-          <span className="transaction-detail-value">{minReceived} {toTokenSymbol}</span>
-        </div>
-
-        <div className="transaction-detail">
-          <span className="transaction-detail-label">Slippage</span>
-          <Select value={slippage.toString()} onValueChange={(value) => handleSlippageClick(parseFloat(value))}>
-            <SelectTrigger className="slippage-selector w-[5.5rem] h-8 border-0 focus:ring-0 shadow-none !bg-token-selector">
-              <span className="font-medium">{slippage}%</span>
-            </SelectTrigger>
-            <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
-              {presetSlippages.map((preset) => (
-                <SelectItem key={preset} value={preset.toString()} className="cursor-pointer [&>span:first-child]:hidden pl-3">
-                  <span className="font-medium">{preset}%</span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="transaction-detail">
-          <span className="transaction-detail-label">Recipient Address</span>
-          <div className="flex items-center gap-2">
-            {!isEditing && displayAddress ? (
+        {/* Collapsible content */}
+        {isExpanded && (
+          <div className="mt-4 space-y-4">
+            <div className="transaction-detail">
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
-                  <div className="flex items-center gap-2 flex-1">
-                    <span 
-                      className="transaction-detail-value cursor-pointer hover:text-white transition-colors"
-                      onClick={handleEditClick}
-                    >
-                      {truncatedAddress}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleEditClick}
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-white"
-                    >
-                      <Edit3 className="h-3 w-3" />
-                    </Button>
-                  </div>
+                  <span className="transaction-detail-label flex items-center gap-1 cursor-pointer">
+                    Platform Fees ({totalFeesPercentage}%)
+                    <Info className="h-3 w-3 text-gray-400" />
+                  </span>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-xs">
-                  <span className="text-xs break-all">{displayAddress}</span>
+                <TooltipContent side="top" className="w-32">
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span>Privfi</span>
+                      <span>0.15%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>AVNU</span>
+                      <span>{(avnuBpsValue / 100).toFixed(2)}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Typhoon</span>
+                      <span>0.50%</span>
+                    </div>
+                  </div>
                 </TooltipContent>
               </Tooltip>
-            ) : (
-              <Input
-                type="text"
-                placeholder={placeholderText}
-                value={tempAddress}
-                onChange={(e) => handleAddressChange(e.target.value)}
-                onFocus={handleInputFocus}
-                onBlur={handleInputBlur}
-                className="h-8 px-2 py-1 bg-token-selector border-0 focus:ring-0 shadow-none text-xs font-medium min-w-0 flex-1"
-                autoFocus={isEditing}
-              />
-            )}
+              <span className="transaction-detail-value">${totalFeeAmount}</span>
+            </div>
+
+            <div className="transaction-detail">
+              <span className="transaction-detail-label">Min Received</span>
+              <span className="transaction-detail-value">{minReceived} {toTokenSymbol}</span>
+            </div>
+
+            <div className="transaction-detail">
+              <span className="transaction-detail-label">Slippage</span>
+              <Select value={slippage.toString()} onValueChange={(value) => handleSlippageClick(parseFloat(value))}>
+                <SelectTrigger className="slippage-selector w-[5.5rem] h-8 border-0 focus:ring-0 shadow-none !bg-token-selector">
+                  <span className="font-medium">{slippage}%</span>
+                </SelectTrigger>
+                <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
+                  {presetSlippages.map((preset) => (
+                    <SelectItem key={preset} value={preset.toString()} className="cursor-pointer [&>span:first-child]:hidden pl-3">
+                      <span className="font-medium">{preset}%</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="transaction-detail">
+              <span className="transaction-detail-label">Recipient Address</span>
+              <div className="flex items-center gap-2">
+                {!isEditing && displayAddress ? (
+                  <Tooltip delayDuration={200}>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-2 flex-1">
+                        <span 
+                          className="transaction-detail-value cursor-pointer hover:text-white transition-colors"
+                          onClick={handleEditClick}
+                        >
+                          {truncatedAddress}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleEditClick}
+                          className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+                        >
+                          <Edit3 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs">
+                      <span className="text-xs break-all">{displayAddress}</span>
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Input
+                    type="text"
+                    placeholder={placeholderText}
+                    value={tempAddress}
+                    onChange={(e) => handleAddressChange(e.target.value)}
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
+                    className="h-8 px-2 py-1 bg-token-selector border-0 focus:ring-0 shadow-none text-xs font-medium min-w-0 flex-1"
+                    autoFocus={isEditing}
+                  />
+                )}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
     </>
