@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@/shared/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip';
 import { Input } from '@/shared/components/ui/input';
 import { Button } from '@/shared/components/ui/button';
@@ -45,6 +44,11 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
   // Update tempAddress when wallet connects/disconnects or changes
   React.useEffect(() => {
     if (!privacy.recipientAddress && walletAddress) {
+      setTempAddress(walletAddress);
+      setRecipientAddress(walletAddress);
+    } else if (privacy.recipientAddress && walletAddress && 
+               privacy.recipientAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+      // If stored address doesn't match current wallet, update it
       setTempAddress(walletAddress);
       setRecipientAddress(walletAddress);
     }
@@ -125,6 +129,11 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
     : '';
   
   const placeholderText = !displayAddress ? 'Enter recipient address' : '';
+  
+  // Hide recipient address row when it matches the wallet address (default behavior)
+  // Use case-insensitive comparison and handle potential truncation issues
+  const shouldHideRecipientRow = displayAddress && walletAddress && 
+    displayAddress.toLowerCase() === walletAddress.toLowerCase();
 
   return (
     <>
@@ -170,14 +179,15 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
         <AnimatePresence>
           {isExpanded && (
             <motion.div 
-              className="mt-4 space-y-4"
+              className=""
               variants={variants.expand}
               initial="initial"
               animate="animate"
               exit="exit"
               style={{ overflow: 'hidden' }}
             >
-            <div className="transaction-detail">
+              <div className="pt-4 space-y-4">
+                <div className="transaction-detail">
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
                   <span className="transaction-detail-label flex items-center gap-1 cursor-pointer">
@@ -212,61 +222,68 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
 
             <div className="transaction-detail">
               <span className="transaction-detail-label">Slippage</span>
-              <Select value={slippage.toString()} onValueChange={(value) => handleSlippageClick(parseFloat(value))}>
-                <SelectTrigger className="slippage-selector w-[5.5rem] h-8 -my-1.5 border-0 focus:ring-0 shadow-none !bg-token-selector">
-                  <span className="font-medium">{slippage}%</span>
-                </SelectTrigger>
-                <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
-                  {presetSlippages.map((preset) => (
-                    <SelectItem key={preset} value={preset.toString()} className="cursor-pointer [&>span:first-child]:hidden pl-3">
-                      <span className="font-medium">{preset}%</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="transaction-detail">
-              <span className="transaction-detail-label">Recipient Address</span>
-              <div className="flex items-center gap-2">
-                {!isEditing && displayAddress ? (
-                  <Tooltip delayDuration={200}>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-center gap-2 flex-1">
-                        <span 
-                          className="transaction-detail-value cursor-pointer hover:text-white transition-colors"
-                          onClick={handleEditClick}
-                        >
-                          {truncatedAddress}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleEditClick}
-                          className="h-6 w-6 p-0 text-gray-400 hover:text-white"
-                        >
-                          <Edit3 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs">
-                      <span className="text-xs break-all">{displayAddress}</span>
-                    </TooltipContent>
-                  </Tooltip>
-                ) : (
-                  <Input
-                    type="text"
-                    placeholder={placeholderText}
-                    value={tempAddress}
-                    onChange={(e) => handleAddressChange(e.target.value)}
-                    onFocus={handleInputFocus}
-                    onBlur={handleInputBlur}
-                    className="h-8 px-2 py-1 bg-token-selector border-0 focus:ring-0 shadow-none text-xs font-medium min-w-0 flex-1"
-                    autoFocus={isEditing}
-                  />
-                )}
+              <div className="flex gap-1">
+                {presetSlippages.map((preset) => (
+                  <motion.button
+                    key={preset}
+                    onClick={() => handleSlippageClick(preset)}
+                    className={`percentage-button ${
+                      slippage === preset ? 'bg-white text-black hover:bg-white' : ''
+                    } ${transitions.default}`}
+                    whileHover={hover.scale}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ duration: 0.2, ease: 'easeOut' }}
+                  >
+                    {preset}%
+                  </motion.button>
+                ))}
               </div>
             </div>
+
+            {!shouldHideRecipientRow && (
+              <div className="transaction-detail">
+                <span className="transaction-detail-label">Recipient Address</span>
+                <div className="flex items-center gap-2">
+                  {!isEditing && displayAddress ? (
+                    <Tooltip delayDuration={200}>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-2 flex-1">
+                          <span 
+                            className="transaction-detail-value cursor-pointer hover:text-white transition-colors"
+                            onClick={handleEditClick}
+                          >
+                            {truncatedAddress}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleEditClick}
+                            className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+                          >
+                            <Edit3 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <span className="text-xs break-all">{displayAddress}</span>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <Input
+                      type="text"
+                      placeholder={placeholderText}
+                      value={tempAddress}
+                      onChange={(e) => handleAddressChange(e.target.value)}
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
+                      className="h-8 px-2 py-1 bg-token-selector border-0 focus:ring-0 shadow-none text-xs font-medium min-w-0 flex-1"
+                      autoFocus={isEditing}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
