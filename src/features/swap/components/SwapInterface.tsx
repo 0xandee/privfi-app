@@ -5,6 +5,8 @@ import { useSwapForm } from '../hooks';
 import { WalletConnectionButton, WalletModal } from '@/features/wallet/components';
 import { SwapCard } from './SwapCard';
 import { SwapErrorBoundary } from './SwapErrorBoundary';
+import PixelBlast from '@/shared/components/PixelBlast';
+import SimpleBackground from '@/shared/components/SimpleBackground';
 
 const SwapInterface = () => {
   const walletConnection = useWalletConnection();
@@ -13,8 +15,30 @@ const SwapInterface = () => {
 
 
   return (
-    <div className="min-h-screen bg-background p-4 flex flex-col items-center justify-center">
-      <div className="w-full max-w-lg bg-[#1C1C1C] rounded-xl p-3 sm:p-6">
+    <div className="min-h-screen bg-transparent p-4 flex flex-col items-center justify-center relative overflow-hidden">
+      {/* Background Animation */}
+      <div className="absolute inset-0 z-0">
+        <PixelBlast
+          variant="square"
+          pixelSize={4}
+          color="#FF5800"
+          patternScale={2}
+          patternDensity={0.8}
+          pixelSizeJitter={0.5}
+          enableRipples
+          rippleSpeed={0.5}
+          rippleThickness={0.1}
+          rippleIntensityScale={0.5}
+          liquid={false}
+          speed={1}
+          edgeFade={0.3}
+          transparent
+          antialias={false}
+        />
+      </div>
+      
+      {/* Main Content */}
+      <div className="w-full max-w-lg bg-[#1C1C1C] rounded-xl p-3 sm:p-6 relative z-10">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <span className="text-lg font-medium text-white">Private Swap</span>
