@@ -21,6 +21,7 @@ export interface SwapQuoteResult {
   error: string | null;
   refetch: () => void;
   selectQuote: (quote: AVNUQuote) => void;
+  clearQuotes: () => void;
   formattedQuote: ReturnType<typeof formatQuoteForDisplay> | null;
   isExpired: boolean;
   timeToExpiry: number; // in seconds
@@ -159,6 +160,15 @@ export const useSwapQuotes = ({
     refetch();
   }, [queryClient, queryKey, refetch]);
 
+  // Clear quotes and reset state for swap direction
+  const clearQuotes = useCallback(() => {
+    console.log('🗑️ Clearing quotes and resetting quote state');
+    setSelectedQuote(null);
+    setTimeToExpiry(0);
+    queryClient.removeQueries({ queryKey });
+    queryClient.invalidateQueries({ queryKey });
+  }, [queryClient, queryKey]);
+
   // Check if selected quote is expired
   const isExpired = selectedQuote ? isAVNUQuoteExpired(selectedQuote) : false;
 
@@ -184,6 +194,7 @@ export const useSwapQuotes = ({
     error: errorMessage,
     refetch: handleRefetch,
     selectQuote,
+    clearQuotes,
     formattedQuote,
     isExpired,
     timeToExpiry,
