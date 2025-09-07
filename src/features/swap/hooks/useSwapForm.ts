@@ -158,10 +158,14 @@ export const useSwapForm = (walletAddress?: string) => {
       // Same token selected, auto-switch the to token
       const alternativeToken = getAlternativeToken(newToken, newToken);
       setToToken(alternativeToken);
+      // Clear amounts only when we need to auto-switch tokens due to conflict
+      setFromAmount('');
+      setToAmount('');
+    } else {
+      // Different tokens - preserve fromAmount, clear toAmount to trigger new quote
+      setToAmount('');
     }
     setFromToken(newToken);
-    setFromAmount('');
-    setToAmount('');
     setIsUserInputting(false);
   }, [toToken.address, getAlternativeToken]);
 
@@ -171,10 +175,14 @@ export const useSwapForm = (walletAddress?: string) => {
       // Same token selected, auto-switch the from token
       const alternativeToken = getAlternativeToken(newToken, newToken);
       setFromToken(alternativeToken);
+      // Clear amounts only when we need to auto-switch tokens due to conflict
+      setFromAmount('');
+      setToAmount('');
+    } else {
+      // Different tokens - preserve fromAmount, clear toAmount to trigger new quote
+      setToAmount('');
     }
     setToToken(newToken);
-    setFromAmount('');
-    setToAmount('');
     setIsUserInputting(false);
   }, [fromToken.address, getAlternativeToken]);
 
