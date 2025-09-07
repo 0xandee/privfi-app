@@ -26,6 +26,7 @@ export interface SwapProgress {
   phase: SwapPhase;
   message: string;
   estimatedTimeMs?: number;
+  startedAt?: number; // Timestamp when this phase started
 }
 
 export interface SwapExecutionState {

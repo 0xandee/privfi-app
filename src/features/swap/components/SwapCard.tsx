@@ -8,6 +8,7 @@ import { useTokenBalance } from '@/shared/hooks';
 import { ErrorMessage } from '@/shared/components/ui/error-message';
 import { AVNUQuote, formatQuoteForDisplay, extractTokenPricesFromQuote } from '../services/avnu';
 import { useSwapStore } from '../store/swapStore';
+import { useTimeEstimation } from '../hooks/useTimeEstimation';
 
 interface SwapCardProps {
   fromAmount: string;
@@ -103,6 +104,9 @@ export const SwapCard: React.FC<SwapCardProps> = ({
 
   // Get execution progress from store
   const { executionProgress } = useSwapStore();
+  
+  // Use time estimation hook for real-time countdown
+  const { formattedRemainingTime } = useTimeEstimation(executionProgress);
 
   return (
     <div>
@@ -222,8 +226,8 @@ export const SwapCard: React.FC<SwapCardProps> = ({
                 <RefreshCw className="h-4 w-4 animate-spin" />
                 <span>
                   {executionProgress.message}
-                  {executionProgress.estimatedTimeMs && (
-                    <span className="text-gray-400"> (~{Math.ceil(executionProgress.estimatedTimeMs / 1000)}s)</span>
+                  {formattedRemainingTime && (
+                    <span className="text-gray-400"> ({formattedRemainingTime})</span>
                   )}
                 </span>
               </div>

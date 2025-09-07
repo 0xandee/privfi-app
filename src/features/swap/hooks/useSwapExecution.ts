@@ -81,10 +81,21 @@ export const useSwapExecution = ({
         withdrawalStatus: 'processing',
       }));
 
+      // Log phase transition from confirming to withdrawal
+      console.log('[SWAP_PHASE_TRANSITION] Blockchain confirmed, starting withdrawal', {
+        fromPhase: 'confirming',
+        toPhase: 'processing-withdrawal',
+        txHash,
+        estimatedWithdrawalDuration: '45000ms',
+        timestamp: new Date().toISOString()
+      });
+
+      const now = Date.now();
       updateProgress({
         phase: 'processing-withdrawal',
         message: 'Processing private withdrawal...',
-        estimatedTimeMs: 45000
+        estimatedTimeMs: 45000, // Updated: Actual withdrawal processing time
+        startedAt: now
       });
 
       // Use recipient address if provided, otherwise use wallet address
@@ -93,9 +104,22 @@ export const useSwapExecution = ({
         throw new Error('No recipient address available for withdrawal');
       }
 
+      console.log('[SWAP_WITHDRAWAL_PROGRESS] Starting SDK withdrawal process', {
+        stage: 'initializing',
+        txHash,
+        recipient,
+        timestamp: new Date().toISOString()
+      });
+
       await typhoonService.withdraw({
         transactionHash: txHash,
         recipientAddresses: [recipient],
+      });
+
+      console.log('[SWAP_WITHDRAWAL_PROGRESS] SDK withdrawal completed successfully', {
+        stage: 'completed',
+        txHash,
+        timestamp: new Date().toISOString()
       });
 
       setExecutionState(prev => ({
@@ -155,10 +179,12 @@ export const useSwapExecution = ({
         }));
         setExecuting(true);
         
+        const now = Date.now();
         updateProgress({
           phase: 'awaiting-signature',
           message: 'Awaiting wallet signature...',
-          estimatedTimeMs: 15000
+          estimatedTimeMs: 10000, // Updated: was 15000ms, actual ~8000ms
+          startedAt: now
         });
         break;
       case 'success': {
@@ -173,10 +199,21 @@ export const useSwapExecution = ({
           withdrawalStatus: 'pending',
         }));
         
+        // Phase 1: Blockchain confirmation only
+        const now = Date.now();
+        console.log('[SWAP_PHASE_TRANSITION] Starting blockchain confirmation', {
+          phase: 'confirming',
+          txHash,
+          estimatedDuration: '3000ms',
+          timestamp: new Date().toISOString(),
+          isPrivateSwap: executionState.isPrivateSwap
+        });
+        
         updateProgress({
           phase: 'confirming',
-          message: 'Transaction confirmed on blockchain...',
-          estimatedTimeMs: 5000
+          message: 'Transaction confirming on blockchain...',
+          estimatedTimeMs: 3000, // Updated: Only blockchain confirmation, not withdrawal
+          startedAt: now
         });
         
         // For private swaps, save SDK data with transaction hash first, then initiate withdrawal
@@ -192,16 +229,26 @@ export const useSwapExecution = ({
           if (hasPendingData) {
             // Save the SDK data with the transaction hash for future withdrawal
             typhoonService.saveDepositDataWithTxHash(txHash, address).then(() => {
-              console.log('✅ Deposit data saved, initiating withdrawal...');
-              handlePrivateWithdrawal(txHash);
+              console.log('✅ Deposit data saved, waiting for confirmation phase...');
+              // Wait for the confirming phase to complete (~3 seconds) before starting withdrawal
+              setTimeout(() => {
+                console.log('[SWAP_PHASE_TRANSITION] Confirming phase complete, initiating withdrawal...');
+                handlePrivateWithdrawal(txHash);
+              }, 3000);
             }).catch((error) => {
               console.error('❌ Failed to save deposit data:', error);
               // Still attempt withdrawal in case data was already saved
-              handlePrivateWithdrawal(txHash);
+              setTimeout(() => {
+                console.log('[SWAP_PHASE_TRANSITION] Confirming phase complete, initiating withdrawal (fallback)...');
+                handlePrivateWithdrawal(txHash);
+              }, 3000);
             });
           } else {
-            console.log('📋 No pending deposit data to save, proceeding with withdrawal...');
-            handlePrivateWithdrawal(txHash);
+            console.log('📋 No pending deposit data to save, waiting for confirmation phase...');
+            setTimeout(() => {
+              console.log('[SWAP_PHASE_TRANSITION] Confirming phase complete, proceeding with withdrawal...');
+              handlePrivateWithdrawal(txHash);
+            }, 3000);
           }
         } else if (txHash && !executionState.isPrivateSwap) {
           // Regular swap completion
@@ -306,18 +353,22 @@ export const useSwapExecution = ({
 
       setExecuting(true);
 
+      const now = Date.now();
       updateProgress({
         phase: 'preparing',
         message: 'Preparing swap transaction...',
-        estimatedTimeMs: 3000
+        estimatedTimeMs: 1000, // Updated: was 3000ms, actual ~500ms
+        startedAt: now
       });
 
       await new Promise(resolve => setTimeout(resolve, 500));
 
+      const now2 = Date.now();
       updateProgress({
         phase: 'building-swap',
         message: 'Building swap calls with AVNU...',
-        estimatedTimeMs: 5000
+        estimatedTimeMs: 2000, // Updated: was 5000ms, actual ~1400ms
+        startedAt: now2
       });
 
       // Build the swap calldata using AVNU's build endpoint
@@ -335,10 +386,12 @@ export const useSwapExecution = ({
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       try {
+        const now3 = Date.now();
         updateProgress({
           phase: 'generating-deposit',
           message: 'Generating private deposit calls...',
-          estimatedTimeMs: 4000
+          estimatedTimeMs: 10000, // Updated: was 4000ms, actual ~9300ms
+          startedAt: now3
         });
 
         // Attempt to generate Typhoon private swap calls (deposit calls)
@@ -359,10 +412,12 @@ export const useSwapExecution = ({
 
         await new Promise(resolve => setTimeout(resolve, 800));
 
+        const now4 = Date.now();
         updateProgress({
           phase: 'awaiting-signature',
           message: 'Ready to sign - please check your wallet...',
-          estimatedTimeMs: 15000
+          estimatedTimeMs: 10000, // Updated: was 15000ms, actual ~8000ms
+          startedAt: now4
         });
 
         // Execute the multicall transaction (swap + deposit)
@@ -381,10 +436,12 @@ export const useSwapExecution = ({
           duration: 5000,
         });
 
+        const now5 = Date.now();
         updateProgress({
           phase: 'awaiting-signature',
           message: 'Ready to sign regular swap - check your wallet...',
-          estimatedTimeMs: 15000
+          estimatedTimeMs: 10000, // Updated: was 15000ms, actual ~8000ms
+          startedAt: now5
         });
 
         // Execute regular swap without deposit calls
