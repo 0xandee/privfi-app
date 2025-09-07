@@ -12,6 +12,13 @@ import { useSwapStore } from '../store/swapStore';
 import { useTimeEstimation } from '../hooks/useTimeEstimation';
 import { useAnimations } from '@/shared/hooks/useAnimations';
 
+interface MinimumAmountValidation {
+  isValid: boolean;
+  minimumAmount: string;
+  errorMessage?: string;
+  warningMessage?: string;
+}
+
 interface SwapCardProps {
   fromAmount: string;
   toAmount: string;
@@ -50,6 +57,8 @@ interface SwapCardProps {
   isEstimatingAfterSwap?: boolean;
   // Direction swap state
   isSwappingDirection?: boolean;
+  // Minimum amount validation
+  minimumAmountValidation?: MinimumAmountValidation;
 }
 
 export const SwapCard: React.FC<SwapCardProps> = ({
@@ -88,6 +97,8 @@ export const SwapCard: React.FC<SwapCardProps> = ({
   isEstimatingAfterSwap = false,
   // Direction swap state
   isSwappingDirection = false,
+  // Minimum amount validation
+  minimumAmountValidation,
 }) => {
   const { variants, transitions } = useAnimations();
   const [swapRotation, setSwapRotation] = useState(0);
@@ -261,7 +272,8 @@ export const SwapCard: React.FC<SwapCardProps> = ({
             (quotesError && fromAmount && parseFloat(fromAmount) > 0) ||
             isExecutingSwap ||
             !!executionProgress ||
-            exceedsBalance
+            exceedsBalance ||
+            (minimumAmountValidation && !minimumAmountValidation.isValid)
           }
         >
           {(() => {
@@ -273,6 +285,7 @@ export const SwapCard: React.FC<SwapCardProps> = ({
               </div>
             );
             if (exceedsBalance) return `Insufficient ${fromToken.symbol} Balance`;
+            if (minimumAmountValidation && !minimumAmountValidation.isValid) return `Minimum output ${minimumAmountValidation.minimumAmount} ${toToken.symbol} required`;
             if (isQuoteExpired) return 'Quote Expired - Refresh';
             if (quotesError && fromAmount && parseFloat(fromAmount) > 0) return 'Quote Error';
             if (executionProgress) return (

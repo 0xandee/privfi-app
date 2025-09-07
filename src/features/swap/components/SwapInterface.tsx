@@ -83,6 +83,8 @@ const SwapInterface = () => {
             isEstimatingAfterSwap={swapForm.isEstimatingAfterSwap}
             // Direction swap state
             isSwappingDirection={swapForm.isSwappingDirection}
+            // Minimum amount validation
+            minimumAmountValidation={swapForm.minimumAmountValidation}
           />
         </SwapErrorBoundary>
       </div>

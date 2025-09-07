@@ -86,6 +86,39 @@ export class TyphoonService extends BaseDEXService {
   }
 
   /**
+   * Get the minimal amount required by Typhoon to mix tokens
+   * Returns the minimal amount as a string (human-readable format)
+   */
+  getTokenMinimalAmount(tokenAddress: string): string {
+    // Normalize token address for comparison
+    const normalizedAddress = tokenAddress.toLowerCase();
+    
+    // Check against known token addresses from constants
+    // ETH: 0.001 ETH minimum
+    if (normalizedAddress === '0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7') {
+      return '0.001';
+    }
+    
+    // STRK: 10 STRK minimum
+    if (normalizedAddress === '0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d') {
+      return '10';
+    }
+    
+    // USDC: 1 USDC minimum
+    if (normalizedAddress === '0x053c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8') {
+      return '1';
+    }
+    
+    // WBTC: 0.00005 WBTC minimum (approximately $2-3 equivalent)
+    if (normalizedAddress === '0x03fe2b97c1fd336e750087d68b9b867997fd64a2661ff3ca5a7c771641e8e7ac') {
+      return '0.00005';
+    }
+    
+    // Default minimum for unknown tokens (equivalent to ~$1)
+    return '0.001';
+  }
+
+  /**
    * Generate approve and deposit calls for private swap
    * Also saves the generated SDK data for later withdrawal
    */

@@ -6,6 +6,7 @@ import { useSwapQuotes, useSwapEstimation } from './useSwapQuotes';
 import { useSwapExecution } from './useSwapExecution';
 import { useSwapStore } from '../store/swapStore';
 import { formatTokenAmountDisplay } from '@/shared/utils/lib/inputValidation';
+import { useMinimumAmountValidation } from './useMinimumAmountValidation';
 
 export const useSwapForm = (walletAddress?: string) => {
   // Get privacy config from store
@@ -42,6 +43,12 @@ export const useSwapForm = (walletAddress?: string) => {
     selectedQuote: swapQuotes.selectedQuote,
     slippage,
     recipientAddress: privacy.recipientAddress || undefined,
+  });
+
+  // Minimum amount validation for private swaps
+  const minimumAmountValidation = useMinimumAmountValidation({
+    outputToken: toToken,
+    outputAmount: toAmount,
   });
 
   // Get a suitable alternative token when same token is selected
@@ -278,6 +285,9 @@ export const useSwapForm = (walletAddress?: string) => {
     isSwapError: swapExecution.isError,
     swapError: swapExecution.error,
     transactionHash: swapExecution.transactionHash,
+
+    // Minimum amount validation for private swaps
+    minimumAmountValidation,
 
     // Actions
     setFromAmount: handleFromAmountChange,
