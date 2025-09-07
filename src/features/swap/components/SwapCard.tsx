@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ArrowUpDown, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { TokenInput } from './TokenInput';
@@ -91,7 +91,6 @@ export const SwapCard: React.FC<SwapCardProps> = ({
 }) => {
   const { variants, transitions } = useAnimations();
   const [swapRotation, setSwapRotation] = useState(0);
-  const lastButtonTextRef = useRef<string>('');
 
   // Fetch balances for selected tokens
   const fromTokenBalance = useTokenBalance(fromToken, walletAddress);
@@ -123,91 +122,6 @@ export const SwapCard: React.FC<SwapCardProps> = ({
     onSwapDirection();
   };
 
-  // Calculate button text for monitoring (without time for logging comparison)
-  const buttonTextForLogging = useMemo(() => {
-    if (!isValidTokenPair) return 'Select Different Tokens';
-    if (isLoadingQuotes) return 'Getting best quotes...';
-    if (exceedsBalance) return `Insufficient ${fromToken.symbol} Balance`;
-    if (isQuoteExpired) return 'Quote Expired - Refresh';
-    if (quotesError && fromAmount && parseFloat(fromAmount) > 0) return 'Quote Error';
-    if (executionProgress) return executionProgress.message; // Exclude time for logging
-    if (isExecutingSwap) return 'Executing swap...';
-    if (fromAmount && parseFloat(fromAmount) > 0 && isValidTokenPair && !selectedQuote) return 'No Quote Available';
-    return 'Swap';
-  }, [
-    isValidTokenPair,
-    isLoadingQuotes,
-    exceedsBalance,
-    fromToken.symbol,
-    isQuoteExpired,
-    quotesError,
-    fromAmount,
-    executionProgress?.message, // Only track message changes, not time
-    isExecutingSwap,
-    selectedQuote
-  ]);
-
-  // Calculate full button text for display (with time)
-  const buttonText = useMemo(() => {
-    if (!isValidTokenPair) return 'Select Different Tokens';
-    if (isLoadingQuotes) return 'Getting best quotes...';
-    if (exceedsBalance) return `Insufficient ${fromToken.symbol} Balance`;
-    if (isQuoteExpired) return 'Quote Expired - Refresh';
-    if (quotesError && fromAmount && parseFloat(fromAmount) > 0) return 'Quote Error';
-    if (executionProgress) {
-      const baseMessage = executionProgress.message;
-      const timeText = formattedRemainingTime ? ` (${formattedRemainingTime})` : '';
-      return `${baseMessage}${timeText}`;
-    }
-    if (isExecutingSwap) return 'Executing swap...';
-    if (fromAmount && parseFloat(fromAmount) > 0 && isValidTokenPair && !selectedQuote) return 'No Quote Available';
-    return 'Swap';
-  }, [
-    isValidTokenPair,
-    isLoadingQuotes,
-    exceedsBalance,
-    fromToken.symbol,
-    isQuoteExpired,
-    quotesError,
-    fromAmount,
-    executionProgress,
-    formattedRemainingTime,
-    isExecutingSwap,
-    selectedQuote
-  ]);
-
-  // Monitor button text changes and log them (excluding time estimate changes)
-  useEffect(() => {
-    if (buttonTextForLogging !== lastButtonTextRef.current) {
-      const timestamp = new Date().toISOString();
-      const phase = executionProgress?.phase || 'none';
-      
-      console.log(`[${timestamp}] Swap Button Text Changed:`, {
-        previousText: lastButtonTextRef.current,
-        newText: buttonTextForLogging,
-        phase,
-        executionProgress: executionProgress ? {
-          phase: executionProgress.phase,
-          message: executionProgress.message,
-          estimatedTimeMs: executionProgress.estimatedTimeMs,
-          startedAt: executionProgress.startedAt
-        } : null,
-        context: {
-          isValidTokenPair,
-          isLoadingQuotes,
-          exceedsBalance,
-          isQuoteExpired,
-          quotesError: !!quotesError,
-          isExecutingSwap,
-          hasSelectedQuote: !!selectedQuote,
-          fromAmount,
-          fromTokenSymbol: fromToken.symbol
-        }
-      });
-      
-      lastButtonTextRef.current = buttonTextForLogging;
-    }
-  }, [buttonTextForLogging, executionProgress?.phase, executionProgress?.message, executionProgress?.estimatedTimeMs, executionProgress?.startedAt, isValidTokenPair, isLoadingQuotes, exceedsBalance, isQuoteExpired, quotesError, isExecutingSwap, selectedQuote, fromAmount, fromToken.symbol]);
 
   return (
     <div className={transitions.default}>
@@ -351,12 +265,16 @@ export const SwapCard: React.FC<SwapCardProps> = ({
           }
         >
           {(() => {
+            if (!isValidTokenPair) return 'Select Different Tokens';
             if (isLoadingQuotes) return (
               <div className="flex items-center gap-2">
                 <RefreshCw className="h-4 w-4 animate-spin" />
                 <span>Getting best quotes...</span>
               </div>
             );
+            if (exceedsBalance) return `Insufficient ${fromToken.symbol} Balance`;
+            if (isQuoteExpired) return 'Quote Expired - Refresh';
+            if (quotesError && fromAmount && parseFloat(fromAmount) > 0) return 'Quote Error';
             if (executionProgress) return (
               <div className="flex items-center gap-2">
                 <RefreshCw className="h-4 w-4 animate-spin" />
@@ -374,7 +292,8 @@ export const SwapCard: React.FC<SwapCardProps> = ({
                 <span>Executing swap...</span>
               </div>
             );
-            return buttonText;
+            if (fromAmount && parseFloat(fromAmount) > 0 && isValidTokenPair && !selectedQuote) return 'No Quote Available';
+            return 'Swap';
           })()}
         </LoadingButton>
       </div>

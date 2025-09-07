@@ -48,6 +48,7 @@ export const useSwapExecution = ({
   const lastMessageRef = useRef<string | null>(null); // Track last message to prevent duplicates
   const withdrawalCompletedRef = useRef<string | null>(null); // Track completed withdrawals
   const progressClearTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Track progress clear timeouts
+  const successProcessedRef = useRef<string | null>(null); // Track processed success transactions
 
   const updateProgress = useCallback((progress: SwapProgress | undefined) => {
     // Prevent duplicate phase transitions (check both phase and message)
@@ -55,26 +56,6 @@ export const useSwapExecution = ({
       lastPhaseRef.current === progress.phase &&
       lastMessageRef.current === progress.message) {
       return;
-    }
-
-    // Log progress updates
-    const timestamp = new Date().toISOString();
-    if (progress) {
-      console.log(`[${timestamp}] Swap Progress Update:`, {
-        previousPhase: lastPhaseRef.current,
-        previousMessage: lastMessageRef.current,
-        newPhase: progress.phase,
-        newMessage: progress.message,
-        estimatedTimeMs: progress.estimatedTimeMs,
-        startedAt: progress.startedAt,
-        elapsedMs: progress.startedAt ? Date.now() - progress.startedAt : null
-      });
-    } else {
-      console.log(`[${timestamp}] Swap Progress Cleared:`, {
-        previousPhase: lastPhaseRef.current,
-        previousMessage: lastMessageRef.current,
-        reason: 'Progress set to undefined'
-      });
     }
 
     if (progress?.phase) {
@@ -231,8 +212,8 @@ export const useSwapExecution = ({
         }));
         setExecuting(true);
 
-        // Only update progress if we're not already in awaiting-signature phase
-        if (currentProgress?.phase !== 'awaiting-signature') {
+        // Only update progress if we're not already in awaiting-signature phase or transitioning
+        if (currentProgress?.phase !== 'awaiting-signature' && !isTransitioningToWalletRef.current) {
           const now = Date.now();
           updateProgress({
             phase: 'awaiting-signature',
@@ -244,6 +225,21 @@ export const useSwapExecution = ({
         break;
       case 'success': {
         const txHash = transactionData?.transaction_hash || null;
+        
+        // Prevent processing the same transaction multiple times
+        if (txHash && successProcessedRef.current === txHash) {
+          break;
+        }
+        
+        // Don't process if withdrawal was already completed for this transaction
+        if (txHash && withdrawalCompletedRef.current === txHash) {
+          break;
+        }
+        
+        if (txHash) {
+          successProcessedRef.current = txHash;
+        }
+        
         setExecutionState(prev => ({
           ...prev,
           isLoading: false,
@@ -544,6 +540,7 @@ export const useSwapExecution = ({
     lastPhaseRef.current = null; // Reset phase tracking
     lastMessageRef.current = null; // Reset message tracking
     withdrawalCompletedRef.current = null; // Reset withdrawal completion tracking
+    successProcessedRef.current = null; // Reset success processing tracking
     // Clear any pending progress clear timeouts
     if (progressClearTimeoutRef.current) {
       clearTimeout(progressClearTimeoutRef.current);
