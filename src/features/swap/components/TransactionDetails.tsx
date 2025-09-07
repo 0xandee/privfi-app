@@ -227,7 +227,7 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
                   <motion.button
                     key={preset}
                     onClick={() => handleSlippageClick(preset)}
-                    className={`percentage-button ${
+                    className={`percentage-button -mt-1.5 ${
                       slippage === preset ? 'bg-white text-black hover:bg-white' : ''
                     } ${transitions.default}`}
                     whileHover={hover.scale}
