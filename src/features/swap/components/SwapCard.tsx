@@ -192,10 +192,8 @@ export const SwapCard: React.FC<SwapCardProps> = ({
         />
       )}
 
-
-
       {/* Swap Button */}
-      <div className="mt-6 space-y-3">
+      <div className="mt-4 space-y-3">
         <LoadingButton
           className="swap-button"
           onClick={onSwap}

@@ -41,6 +41,8 @@ export const useSwapExecution = ({
   const typhoonService = useMemo(() => new TyphoonService(), []);
   const toastShownRef = useRef<string | null>(null);
   const errorToastShownRef = useRef<string | null>(null);
+  const withdrawalInitiatedRef = useRef<string | null>(null); // Track which transaction has withdrawal initiated
+  const processedTransactionRef = useRef<string | null>(null); // Track processed transactions
 
   const updateProgress = useCallback((progress: SwapProgress | undefined) => {
     setExecutionProgress(progress);
@@ -58,11 +60,20 @@ export const useSwapExecution = ({
   });
 
   const handlePrivateWithdrawal = useCallback(async (txHash: string) => {
-    // Prevent duplicate withdrawal calls
+    // Prevent duplicate withdrawal calls using ref to avoid circular dependency
+    if (withdrawalInitiatedRef.current === txHash) {
+      console.log('⏸️ Withdrawal already initiated for transaction:', txHash);
+      return;
+    }
+
+    // Check current withdrawal status from state
     if (executionState.withdrawalStatus === 'processing' || executionState.withdrawalStatus === 'completed') {
       console.log('⏸️ Withdrawal already in progress or completed, skipping...');
       return;
     }
+
+    // Mark this transaction as having withdrawal initiated
+    withdrawalInitiatedRef.current = txHash;
 
     try {
       setExecutionState(prev => ({
@@ -118,7 +129,9 @@ export const useSwapExecution = ({
         duration: 8000,
       });
     }
-  }, [typhoonService, recipientAddress, address, updateProgress, executionState.withdrawalStatus]);
+    // Note: executionState.withdrawalStatus is intentionally omitted from dependencies 
+    // to prevent circular dependency that causes infinite re-renders
+  }, [typhoonService, recipientAddress, address, updateProgress]);
 
   // Update execution state based on transaction status
   useEffect(() => {
@@ -168,7 +181,11 @@ export const useSwapExecution = ({
         
         // For private swaps, save SDK data with transaction hash first, then initiate withdrawal
         // Only do this if we haven't already processed this transaction and we have pending deposit data
-        if (txHash && executionState.isPrivateSwap && address && executionState.withdrawalStatus !== 'processing' && executionState.withdrawalStatus !== 'completed') {
+        if (txHash && executionState.isPrivateSwap && address && 
+            processedTransactionRef.current !== txHash && 
+            withdrawalInitiatedRef.current !== txHash) {
+          // Mark transaction as processed to prevent re-processing
+          processedTransactionRef.current = txHash;
           // Check if we have pending deposit data to save
           const hasPendingData = typhoonService.hasPendingDepositData();
           
@@ -412,6 +429,8 @@ export const useSwapExecution = ({
     updateProgress(undefined);
     toastShownRef.current = null; // Reset success toast tracking
     errorToastShownRef.current = null; // Reset error toast tracking
+    withdrawalInitiatedRef.current = null; // Reset withdrawal tracking
+    processedTransactionRef.current = null; // Reset transaction processing tracking
     resetTransaction();
   }, [resetTransaction, setExecuting, updateProgress]);
 

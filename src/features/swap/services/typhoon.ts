@@ -12,6 +12,7 @@ import {
   loadTyphoonDepositData,
   saveTyphoonDepositData,
   clearTyphoonDepositData,
+  clearAllTyphoonData,
   TyphoonDepositData
 } from '../utils/typhoonStorage';
 
@@ -469,9 +470,9 @@ export class TyphoonService extends BaseDEXService {
         console.log('Result type:', typeof result);
         
         // Clean up stored data after successful withdrawal
-        console.log('🧹 Clearing stored deposit data after successful withdrawal...');
-        clearTyphoonDepositData(withdrawRequest.transactionHash);
-        console.log('✅ Deposit data cleared');
+        console.log('🧹 Clearing ALL stored deposit data after successful withdrawal...');
+        clearAllTyphoonData();
+        console.log('✅ All deposit data cleared');
         
       } catch (sdkError) {
         const duration = Date.now() - startTime;
