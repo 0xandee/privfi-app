@@ -39,7 +39,7 @@ export const useTimeEstimation = (progress: SwapProgress | undefined): UseTimeEs
       // Log new phase start
       console.log(`[SWAP_TIMING] Phase: ${progress.phase}`, {
         startedAt: timestamp,
-        estimatedTime: progress.estimatedTimeMs ? `${progress.estimatedTimeMs}ms` : 'unknown',
+        estimatedTime: progress.estimatedTimeMs ? `${progress.estimatedTimeMs}ms` : 'user-dependent',
         message: progress.message
       });
       
@@ -49,13 +49,37 @@ export const useTimeEstimation = (progress: SwapProgress | undefined): UseTimeEs
 
   // Update time calculations every second
   useEffect(() => {
-    if (!progress?.startedAt || !progress.estimatedTimeMs) {
+    if (!progress?.startedAt) {
       setRemainingTime(null);
       setElapsedTime(null);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = undefined;
       }
+      return;
+    }
+
+    // Handle phases without time estimates (like awaiting-signature)
+    if (!progress.estimatedTimeMs) {
+      setRemainingTime(null);
+      
+      // Still track elapsed time for phases without estimates
+      const updateElapsedTime = () => {
+        const now = Date.now();
+        const elapsed = now - (progress.startedAt || now);
+        setElapsedTime(elapsed);
+        
+        // Log elapsed time for user-dependent phases
+        console.log(`[SWAP_COUNTDOWN] Phase: ${progress.phase}`, {
+          elapsed: `${elapsed}ms`,
+          remaining: 'user-dependent',
+          progress: 'pending user action',
+          timestamp: new Date().toISOString()
+        });
+      };
+
+      updateElapsedTime();
+      intervalRef.current = setInterval(updateElapsedTime, 1000);
       return;
     }
 

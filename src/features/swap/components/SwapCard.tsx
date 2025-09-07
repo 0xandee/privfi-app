@@ -201,8 +201,7 @@ export const SwapCard: React.FC<SwapCardProps> = ({
         <LoadingButton
           className="swap-button"
           onClick={onSwap}
-          loading={isExecutingSwap}
-          loadingText="Executing swap..."
+          loading={false}
           spinnerVariant="refresh"
           disabled={
             !isValidTokenPair ||

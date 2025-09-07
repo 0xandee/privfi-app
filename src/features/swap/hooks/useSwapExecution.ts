@@ -44,8 +44,25 @@ export const useSwapExecution = ({
   const withdrawalInitiatedRef = useRef<string | null>(null); // Track which transaction has withdrawal initiated
   const processedTransactionRef = useRef<string | null>(null); // Track processed transactions
   const isTransitioningToWalletRef = useRef<boolean>(false); // Track transition to wallet interaction
+  const lastPhaseRef = useRef<string | null>(null); // Track last phase to prevent duplicates
+  const lastMessageRef = useRef<string | null>(null); // Track last message to prevent duplicates
 
   const updateProgress = useCallback((progress: SwapProgress | undefined) => {
+    // Prevent duplicate phase transitions (check both phase and message)
+    if (progress?.phase && progress?.message && 
+        lastPhaseRef.current === progress.phase && 
+        lastMessageRef.current === progress.message) {
+      console.log(`[SWAP_STATE_DEBUG] Skipping duplicate phase transition: ${progress.phase} - ${progress.message}`);
+      return;
+    }
+    
+    if (progress?.phase) {
+      lastPhaseRef.current = progress.phase;
+    }
+    if (progress?.message) {
+      lastMessageRef.current = progress.message;
+    }
+    
     setExecutionProgress(progress);
     setExecutionState(prev => ({ ...prev, progress }));
   }, [setExecutionProgress]);
@@ -87,7 +104,7 @@ export const useSwapExecution = ({
         fromPhase: 'confirming',
         toPhase: 'processing-withdrawal',
         txHash,
-        estimatedWithdrawalDuration: '45000ms',
+        estimatedWithdrawalDuration: '47000ms',
         timestamp: new Date().toISOString()
       });
 
@@ -95,7 +112,7 @@ export const useSwapExecution = ({
       updateProgress({
         phase: 'processing-withdrawal',
         message: 'Processing private withdrawal...',
-        estimatedTimeMs: 45000, // Updated: Actual withdrawal processing time
+        estimatedTimeMs: 47000, // Updated: was 45000ms, actual ~46200ms + buffer
         startedAt: now
       });
 
@@ -203,7 +220,7 @@ export const useSwapExecution = ({
         updateProgress({
           phase: 'awaiting-signature',
           message: 'Awaiting wallet signature...',
-          estimatedTimeMs: 10000, // Updated: was 15000ms, actual ~8000ms
+          estimatedTimeMs: undefined, // No estimation - user dependent
           startedAt: now
         });
         break;
@@ -360,6 +377,8 @@ export const useSwapExecution = ({
     }
 
     try {
+      // Set executing and loading state FIRST to prevent idle state clearing
+      setExecuting(true);
       setExecutionState(prev => ({
         ...prev,
         isLoading: true,
@@ -370,8 +389,6 @@ export const useSwapExecution = ({
         isPrivateSwap: false, // Reset private swap flag
         withdrawalStatus: 'pending', // Reset withdrawal status
       }));
-
-      setExecuting(true);
 
       const now = Date.now();
       updateProgress({
@@ -410,7 +427,7 @@ export const useSwapExecution = ({
         updateProgress({
           phase: 'generating-deposit',
           message: 'Generating private deposit calls...',
-          estimatedTimeMs: 10000, // Updated: was 4000ms, actual ~9300ms
+          estimatedTimeMs: 15000, // Updated: was 10000ms, actual ~14200ms
           startedAt: now3
         });
 
@@ -436,7 +453,7 @@ export const useSwapExecution = ({
         updateProgress({
           phase: 'awaiting-signature',
           message: 'Ready to sign - please check your wallet...',
-          estimatedTimeMs: 10000, // Updated: was 15000ms, actual ~8000ms
+          estimatedTimeMs: undefined, // No estimation - user dependent
           startedAt: now4
         });
 
@@ -470,7 +487,7 @@ export const useSwapExecution = ({
         updateProgress({
           phase: 'awaiting-signature',
           message: 'Ready to sign regular swap - check your wallet...',
-          estimatedTimeMs: 10000, // Updated: was 15000ms, actual ~8000ms
+          estimatedTimeMs: undefined, // No estimation - user dependent
           startedAt: now5
         });
 
@@ -529,6 +546,8 @@ export const useSwapExecution = ({
     withdrawalInitiatedRef.current = null; // Reset withdrawal tracking
     processedTransactionRef.current = null; // Reset transaction processing tracking
     isTransitioningToWalletRef.current = false; // Reset transition tracking
+    lastPhaseRef.current = null; // Reset phase tracking
+    lastMessageRef.current = null; // Reset message tracking
     resetTransaction();
   }, [resetTransaction, setExecuting, updateProgress]);
 
