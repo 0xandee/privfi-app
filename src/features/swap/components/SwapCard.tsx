@@ -1,12 +1,23 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ArrowUpDown, RefreshCw } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { TokenInput } from './TokenInput';
 import { TransactionDetails } from './TransactionDetails';
-import { Button } from '@/shared/components/ui/button';
+import { LoadingButton } from '@/shared/components/ui/loading-button';
 import { Token } from '@/constants/tokens';
 import { useTokenBalance } from '@/shared/hooks';
 import { ErrorMessage } from '@/shared/components/ui/error-message';
 import { AVNUQuote, formatQuoteForDisplay, extractTokenPricesFromQuote } from '../services/avnu';
+import { useSwapStore } from '../store/swapStore';
+import { useTimeEstimation } from '../hooks/useTimeEstimation';
+import { useAnimations } from '@/shared/hooks/useAnimations';
+
+interface MinimumAmountValidation {
+  isValid: boolean;
+  minimumAmount: string;
+  errorMessage?: string;
+  warningMessage?: string;
+}
 
 interface SwapCardProps {
   fromAmount: string;
@@ -44,6 +55,10 @@ interface SwapCardProps {
   onResetSwap?: () => void;
   // Estimating state
   isEstimatingAfterSwap?: boolean;
+  // Direction swap state
+  isSwappingDirection?: boolean;
+  // Minimum amount validation
+  minimumAmountValidation?: MinimumAmountValidation;
 }
 
 export const SwapCard: React.FC<SwapCardProps> = ({
@@ -80,7 +95,13 @@ export const SwapCard: React.FC<SwapCardProps> = ({
   onResetSwap,
   // Estimating state
   isEstimatingAfterSwap = false,
+  // Direction swap state
+  isSwappingDirection = false,
+  // Minimum amount validation
+  minimumAmountValidation,
 }) => {
+  const { variants, transitions } = useAnimations();
+  const [swapRotation, setSwapRotation] = useState(0);
 
   // Fetch balances for selected tokens
   const fromTokenBalance = useTokenBalance(fromToken, walletAddress);
@@ -100,13 +121,23 @@ export const SwapCard: React.FC<SwapCardProps> = ({
     return inputAmount > availableBalance;
   }, [fromAmount, fromTokenBalance.rawFormatted]);
 
+  // Get execution progress from store
+  const { executionProgress } = useSwapStore();
+  
+  // Use time estimation hook for real-time countdown
+  const { formattedRemainingTime } = useTimeEstimation(executionProgress);
 
+  // Handle swap direction with animation
+  const handleSwapDirection = () => {
+    setSwapRotation(prev => prev + 180);
+    onSwapDirection();
+  };
 
 
   return (
-    <div>
+    <div className={transitions.default}>
       {/* Main Swap Card */}
-      <div className="crypto-card px-4 py-6 space-y-4">
+      <div className="crypto-card px-4 py-6">
         {/* From Token Section */}
         <TokenInput
           label="From"
@@ -119,20 +150,29 @@ export const SwapCard: React.FC<SwapCardProps> = ({
           onTokenChange={onFromTokenChange}
           showPercentageButtons={true}
           percentageButtons={percentageButtons}
-          onPercentageClick={(percentage) => onPercentageClick(percentage, fromTokenBalance.balance)}
+          onPercentageClick={(percentage) => onPercentageClick(percentage, fromTokenBalance.rawFormatted)}
           disableSync={isEstimatingAfterSwap}
         />
 
         {/* Swap Direction with Separator */}
-        <div className="relative flex justify-center py-2 -mx-6">
+        <div className="relative flex justify-center py-2 -mx-6 mt-4">
           {/* Separator line going through button */}
           <div className="absolute top-1/2 left-0 right-0 h-1 bg-[#1C1C1C] transform -translate-y-1/2"></div>
-          <button
-            onClick={onSwapDirection}
-            className="w-10 h-10 bg-[#1C1C1C] text-percentage-button-foreground rounded-md hover:bg-percentage-button-hover transition-colors cursor-pointer text-sm font-medium relative z-10 flex items-center justify-center"
+          <motion.button
+            onClick={handleSwapDirection}
+            className={`w-10 h-10 bg-[#1C1C1C] text-percentage-button-foreground rounded-md hover:bg-percentage-button-hover cursor-pointer text-sm font-medium relative z-10 flex items-center justify-center ${transitions.colors} ${transitions.transform}`}
+            whileTap={!isSwappingDirection ? { scale: 0.95 } : {}}
+            animate={{ opacity: isSwappingDirection ? 0.5 : 1 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            disabled={isSwappingDirection}
           >
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
+            <motion.div
+              animate={{ rotate: swapRotation }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+            >
+              <ArrowUpDown className="h-4 w-4" />
+            </motion.div>
+          </motion.button>
         </div>
 
         {/* To Token Section */}
@@ -164,21 +204,46 @@ export const SwapCard: React.FC<SwapCardProps> = ({
             />
           )}
 
-          {/* Transaction Details with quote data */}
-          {formattedQuote && selectedQuote && !quotesError && (
-            <TransactionDetails
-              rate={formattedQuote.exchangeRate}
-              rateWithUsd={formattedQuote.exchangeRateWithUsd}
-              integratorFee={formattedQuote.integratorFee}
-              integratorFeesBps={selectedQuote.integratorFeesBps}
-              avnuFee={formattedQuote.avnuFee}
-              avnuFeesBps={selectedQuote.avnuFeesBps}
-              minReceived={minReceived}
-              slippage={slippage}
-              onSlippageChange={onSlippageChange}
-              toTokenSymbol={toToken.symbol}
-            />
-          )}
+          {/* Always show TransactionDetails to prevent flickering */}
+          <TransactionDetails
+            rate={
+              formattedQuote && selectedQuote && !quotesError
+                ? formattedQuote.exchangeRate
+                : isLoadingQuotes || isSwappingDirection
+                ? "Loading..."
+                : "Loading..."
+            }
+            rateWithUsd={
+              formattedQuote && selectedQuote && !quotesError
+                ? formattedQuote.exchangeRateWithUsd
+                : ""
+            }
+            integratorFee={
+              formattedQuote && selectedQuote && !quotesError
+                ? formattedQuote.integratorFee
+                : "0"
+            }
+            integratorFeesBps={
+              selectedQuote && !quotesError
+                ? selectedQuote.integratorFeesBps
+                : 15
+            }
+            avnuFee={
+              formattedQuote && selectedQuote && !quotesError
+                ? formattedQuote.avnuFee
+                : "0"
+            }
+            avnuFeesBps={
+              selectedQuote && !quotesError
+                ? selectedQuote.avnuFeesBps
+                : 0
+            }
+            minReceived={minReceived}
+            slippage={slippage}
+            onSlippageChange={onSlippageChange}
+            toTokenSymbol={toToken.symbol}
+            walletAddress={walletAddress}
+          />
         </>
       )}
 
@@ -190,45 +255,60 @@ export const SwapCard: React.FC<SwapCardProps> = ({
         />
       )}
 
-
-
       {/* Swap Button */}
-      <div className="mt-6 space-y-3">
-        <Button
-          className={`swap-button ${(!isValidTokenPair || isQuoteExpired || (quotesError && fromAmount && parseFloat(fromAmount) > 0) || isExecutingSwap || exceedsBalance) ? 'opacity-50 cursor-not-allowed' : ''}`}
+      <div className="mt-4 space-y-3">
+        <LoadingButton
+          className="swap-button"
           onClick={onSwap}
+          loading={false}
+          spinnerVariant="refresh"
           disabled={
             !isValidTokenPair ||
             !fromAmount ||
             parseFloat(fromAmount) <= 0 ||
+            isLoadingQuotes ||
             (fromAmount && parseFloat(fromAmount) > 0 && isValidTokenPair && !selectedQuote && !isLoadingQuotes) ||
             isQuoteExpired ||
             (quotesError && fromAmount && parseFloat(fromAmount) > 0) ||
             isExecutingSwap ||
-            exceedsBalance
+            !!executionProgress ||
+            exceedsBalance ||
+            (minimumAmountValidation && !minimumAmountValidation.isValid)
           }
         >
           {(() => {
             if (!isValidTokenPair) return 'Select Different Tokens';
-            if (exceedsBalance) return `Insufficient ${fromToken.symbol} Balance`;
-            if (isQuoteExpired) return 'Quote Expired - Refresh';
-            if (quotesError && fromAmount && parseFloat(fromAmount) > 0) return 'Quote Error';
-            if (isExecutingSwap) return (
-              <div className="flex items-center gap-2">
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                <span>Executing swap...</span>
-              </div>
-            );
             if (isLoadingQuotes) return (
               <div className="flex items-center gap-2">
                 <RefreshCw className="h-4 w-4 animate-spin" />
                 <span>Getting best quotes...</span>
               </div>
             );
+            if (exceedsBalance) return `Insufficient ${fromToken.symbol} Balance`;
+            if (minimumAmountValidation && !minimumAmountValidation.isValid) return `Minimum output ${minimumAmountValidation.minimumAmount} ${toToken.symbol} required`;
+            if (isQuoteExpired) return 'Quote Expired - Refresh';
+            if (quotesError && fromAmount && parseFloat(fromAmount) > 0) return 'Quote Error';
+            if (executionProgress) return (
+              <div className="flex items-center gap-2">
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                <span>
+                  {executionProgress.message}
+                  {formattedRemainingTime && (
+                    <span className="text-gray-400"> ({formattedRemainingTime})</span>
+                  )}
+                </span>
+              </div>
+            );
+            if (isExecutingSwap) return (
+              <div className="flex items-center gap-2">
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                <span>Executing swap...</span>
+              </div>
+            );
             if (fromAmount && parseFloat(fromAmount) > 0 && isValidTokenPair && !selectedQuote) return 'No Quote Available';
             return 'Swap';
           })()}
-        </Button>
+        </LoadingButton>
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { TokenSelector } from './TokenSelector';
 import { Token } from '@/constants/tokens';
 import { useInputValidation } from '@/shared/hooks';
@@ -8,6 +9,8 @@ import { getTokenUSDDisplay } from '@/shared/utils/priceUtils';
 import { formatTokenAmountDisplay } from '@/shared/utils/lib/inputValidation';
 import { ErrorMessage } from '@/shared/components/ui/error-message';
 import { WarningMessage } from '@/shared/components/ui/warning-message';
+import { useAnimations } from '@/shared/hooks/useAnimations';
+import { AnimatedNumber } from '@/shared/components/ui/animated-number';
 
 interface TokenInputProps {
   label: string;
@@ -46,12 +49,14 @@ export const TokenInput: React.FC<TokenInputProps> = ({
   isEstimating = false,
   disableSync = false,
 }) => {
+  const { variants, transitions, hover, focus } = useAnimations();
   const validation = useInputValidation(
     amount, 
     selectedToken, 
     disableBalanceValidation ? undefined : balance
   );
   const [activePercentage, setActivePercentage] = useState<number | null>(null);
+  const [isFocused, setIsFocused] = useState(false);
   
   // Use pre-fetched price data if available, otherwise fetch individually
   // Try multiple address formats to find a match
@@ -106,14 +111,12 @@ export const TokenInput: React.FC<TokenInputProps> = ({
   useEffect(() => {
     // Skip syncing if disabled to prevent conflicts during swap direction
     if (disableSync) {
-      console.log(`TokenInput (${label}) skipping sync - disabled`);
       return;
     }
     
     // Always sync when the amount prop changes and it's different from the validation value
     // This ensures programmatic updates (like swap direction) work correctly
     if (amount !== validation.value) {
-      console.log(`TokenInput (${label}) syncing amount:`, { amount, validationValue: validation.value });
       validation.setValue(amount);
     }
   }, [amount, label, disableSync, validation.setValue]); // Include validation.setValue
@@ -141,18 +144,21 @@ export const TokenInput: React.FC<TokenInputProps> = ({
     validation.handleChange(e.target.value);
   };
 
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    setIsFocused(true);
+  };
+
+  const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    setIsFocused(false);
+    validation.handleBlur(e);
+  };
+
   const handlePercentageClick = (percentage: number) => {
     if (balance && parseFloat(balance) > 0) {
-      const balanceNum = parseFloat(balance);
-      const amount = (balanceNum * percentage) / 100;
-      // Format to appropriate decimals based on token, removing trailing zeros
-      const maxDisplayDecimals = selectedToken.decimals > 6 ? 6 : selectedToken.decimals;
-      const formattedAmount = formatTokenAmountDisplay(amount, maxDisplayDecimals);
-      validation.setValue(formattedAmount);
       setActivePercentage(percentage); // Set active percentage for visual feedback
+      // Call the parent's percentage click handler
+      onPercentageClick?.(percentage);
     }
-    // Also call the parent's percentage click handler if provided
-    onPercentageClick?.(percentage);
   };
 
   return (
@@ -171,7 +177,8 @@ export const TokenInput: React.FC<TokenInputProps> = ({
               type="text"
               value={validation.value}
               onChange={readOnly ? undefined : handleInputChange}
-              onBlur={readOnly ? undefined : validation.handleBlur}
+              onFocus={readOnly ? undefined : handleInputFocus}
+              onBlur={readOnly ? undefined : handleInputBlur}
               readOnly={readOnly}
               className={`token-input w-full ${
                 validation.displayError ? 'border border-red-400/50 bg-red-400/5' : ''
@@ -179,7 +186,7 @@ export const TokenInput: React.FC<TokenInputProps> = ({
                 readOnly ? 'cursor-default' : ''
               } ${
                 isEstimating ? 'pr-8' : ''
-              }`}
+              } ${transitions.default}`}
               placeholder={placeholder}
             />
             {isEstimating && (
@@ -200,23 +207,30 @@ export const TokenInput: React.FC<TokenInputProps> = ({
         )}
 
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">
-            {isLoading ? "Loading..." : usdValue}
-          </span>
+          <AnimatedNumber 
+            value={isLoading ? "Loading..." : usdValue}
+            className="text-sm text-muted-foreground"
+          />
           {showPercentageButtons && !readOnly && (
             <div className="flex gap-2">
-              {percentageButtons.map((percentage) => (
-                <button
-                  key={percentage}
-                  onClick={() => handlePercentageClick(percentage)}
-                  className={`percentage-button ${!balance || parseFloat(balance) <= 0 ? 'opacity-50 cursor-not-allowed' : ''
-                    } ${activePercentage === percentage ? 'bg-white text-black hover:bg-white' : ''
-                    }`}
-                  disabled={!balance || parseFloat(balance) <= 0}
-                >
-                  {percentage}%
-                </button>
-              ))}
+              {percentageButtons.map((percentage) => {
+                const isDisabled = !balance || parseFloat(balance) <= 0;
+                return (
+                  <motion.button
+                    key={percentage}
+                    onClick={() => handlePercentageClick(percentage)}
+                    className={`percentage-button ${
+                      activePercentage === percentage ? 'bg-white text-black hover:bg-white' : ''
+                    } ${transitions.default}`}
+                    animate={{ opacity: isDisabled ? 0.5 : 1 }}
+                    transition={{ duration: 0.2, ease: 'easeOut' }}
+                    disabled={isDisabled}
+                    style={{ cursor: isDisabled ? 'not-allowed' : 'pointer' }}
+                  >
+                    {percentage}%
+                  </motion.button>
+                );
+              })}
             </div>
           )}
         </div>

@@ -5,3 +5,4 @@ export { TokenSelector } from './TokenSelector';
 export { TransactionDetails } from './TransactionDetails';
 export { PercentageButtons } from './PercentageButtons';
 export { SwapErrorBoundary } from './SwapErrorBoundary';
+export { PrivacyConfig } from './PrivacyConfig';

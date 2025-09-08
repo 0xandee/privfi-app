@@ -1,7 +1,12 @@
-import React from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@/shared/components/ui/select';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip';
-import { Info } from 'lucide-react';
+import { Input } from '@/shared/components/ui/input';
+import { Button } from '@/shared/components/ui/button';
+import { Info, User, Edit3, ChevronDown, ChevronUp } from 'lucide-react';
+import { useSwapStore } from '../store/swapStore';
+import { useAnimations } from '@/shared/hooks/useAnimations';
+import { AnimatedNumber } from '@/shared/components/ui/animated-number';
 
 interface TransactionDetailsProps {
   rate?: string;
@@ -14,6 +19,7 @@ interface TransactionDetailsProps {
   slippage?: number;
   onSlippageChange?: (slippage: number) => void;
   toTokenSymbol?: string;
+  walletAddress?: string;
 }
 
 export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
@@ -27,7 +33,26 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
   slippage = 0.5,
   onSlippageChange,
   toTokenSymbol = "",
+  walletAddress,
 }) => {
+  const { variants, transitions, hover } = useAnimations();
+  const { privacy, setRecipientAddress } = useSwapStore();
+  const [tempAddress, setTempAddress] = useState(privacy.recipientAddress || walletAddress || '');
+  const [isEditing, setIsEditing] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Update tempAddress when wallet connects/disconnects or changes
+  React.useEffect(() => {
+    if (!privacy.recipientAddress && walletAddress) {
+      setTempAddress(walletAddress);
+      setRecipientAddress(walletAddress);
+    } else if (privacy.recipientAddress && walletAddress && 
+               privacy.recipientAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+      // If stored address doesn't match current wallet, update it
+      setTempAddress(walletAddress);
+      setRecipientAddress(walletAddress);
+    }
+  }, [walletAddress, privacy.recipientAddress, setRecipientAddress]);
 
   const presetSlippages = [0, 0.1, 0.5, 1];
 
@@ -67,70 +92,203 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
     onSlippageChange?.(value);
   };
 
-  return (
-    <div className="crypto-card px-4 py-6 mt-6 space-y-4">
-      <div className="transaction-detail">
-        <span className="transaction-detail-label">Rate</span>
-        <span className="transaction-detail-value">
-          {rateWithUsd ? (
-            <>
-              {rateWithUsd.split(' (')[0]}{' '}
-              <span className="text-transaction-detail">({rateWithUsd.split(' (')[1]}</span>
-            </>
-          ) : (
-            rate
-          )}
-        </span>
-      </div>
+  const handleToggleExpand = () => {
+    setIsExpanded(!isExpanded);
+  };
 
-      <div className="transaction-detail">
-        <Tooltip delayDuration={200}>
-          <TooltipTrigger asChild>
-            <span className="transaction-detail-label flex items-center gap-1 cursor-pointer">
-              Platform Fees ({totalFeesPercentage}%)
-              <Info className="h-3 w-3 text-gray-400" />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent side="top" className="w-32">
-            <div className="space-y-1 text-xs">
-              <div className="flex justify-between">
-                <span>Privfi</span>
-                <span>0.15%</span>
-              </div>
-              <div className="flex justify-between">
-                <span>AVNU</span>
-                <span>{(avnuBpsValue / 100).toFixed(2)}%</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Typhoon</span>
-                <span>0.50%</span>
+  const handleAddressChange = (value: string) => {
+    setTempAddress(value);
+    setRecipientAddress(value);
+  };
+
+  const handleUseWallet = () => {
+    if (walletAddress) {
+      setTempAddress(walletAddress);
+      setRecipientAddress(walletAddress);
+      setIsEditing(false);
+    }
+  };
+
+  const handleEditClick = () => {
+    setIsEditing(true);
+  };
+
+  const handleInputFocus = () => {
+    setIsEditing(true);
+  };
+
+  const handleInputBlur = () => {
+    setIsEditing(false);
+  };
+
+  const displayAddress = tempAddress || walletAddress || '';
+  const truncatedAddress = displayAddress 
+    ? displayAddress.length > 16
+      ? `${displayAddress.slice(0, 6)}...${displayAddress.slice(-4)}`
+      : displayAddress
+    : '';
+  
+  const placeholderText = !displayAddress ? 'Enter recipient address' : '';
+  
+  // Hide recipient address row when it matches the wallet address (default behavior)
+  // Use case-insensitive comparison and handle potential truncation issues
+  const shouldHideRecipientRow = displayAddress && walletAddress && 
+    displayAddress.toLowerCase() === walletAddress.toLowerCase();
+
+  return (
+    <>
+      <motion.div 
+        className="crypto-card px-4 py-4 mt-4"
+        variants={variants.slideUp}
+        initial="initial"
+        animate="animate"
+      >
+        {/* Header with rate and toggle button */}
+        <div className="flex justify-between items-center">
+          <AnimatedNumber
+            value={rateWithUsd ? (
+              rateWithUsd.split(' (')[0] + ' (' + rateWithUsd.split(' (')[1]
+            ) : rate}
+            className="transaction-detail-value text-sm"
+          />
+          <motion.div
+            whileTap={{ scale: 0.95 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+          >
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleToggleExpand}
+              className={`flex items-center gap-2 h-8 px-2 text-gray-400 hover:text-white ${transitions.colors}`}
+            >
+              <span className="text-xs text-transaction-detail">
+                {isExpanded ? 'Hide details' : 'Show details'}
+              </span>
+              <motion.div
+                animate={{ rotate: isExpanded ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ChevronDown className="h-4 w-4" />
+              </motion.div>
+            </Button>
+          </motion.div>
+        </div>
+
+        {/* Collapsible content */}
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div 
+              className=""
+              variants={variants.expand}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              style={{ overflow: 'hidden' }}
+            >
+              <div className="pt-4 space-y-4">
+                <div className="transaction-detail">
+              <Tooltip delayDuration={200}>
+                <TooltipTrigger asChild>
+                  <span className="transaction-detail-label flex items-center gap-1 cursor-pointer">
+                    Platform Fees ({totalFeesPercentage}%)
+                    <Info className="h-3 w-3 text-gray-400" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="w-32">
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span>Privfi</span>
+                      <span>0.15%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>AVNU</span>
+                      <span>{(avnuBpsValue / 100).toFixed(2)}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Typhoon</span>
+                      <span>0.50%</span>
+                    </div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+              <AnimatedNumber value={`$${totalFeeAmount}`} className="transaction-detail-value" />
+            </div>
+
+            <div className="transaction-detail">
+              <span className="transaction-detail-label">Min Received</span>
+              <AnimatedNumber value={`${minReceived} ${toTokenSymbol}`} className="transaction-detail-value" />
+            </div>
+
+            <div className="transaction-detail">
+              <span className="transaction-detail-label">Slippage</span>
+              <div className="flex gap-1">
+                {presetSlippages.map((preset) => (
+                  <motion.button
+                    key={preset}
+                    onClick={() => handleSlippageClick(preset)}
+                    className={`percentage-button -mt-1.5 ${
+                      slippage === preset ? 'bg-white text-black hover:bg-white' : ''
+                    } ${transitions.default}`}
+                    whileHover={hover.scale}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ duration: 0.2, ease: 'easeOut' }}
+                  >
+                    {preset}%
+                  </motion.button>
+                ))}
               </div>
             </div>
-          </TooltipContent>
-        </Tooltip>
-        <span className="transaction-detail-value">${totalFeeAmount}</span>
-      </div>
 
-      <div className="transaction-detail">
-        <span className="transaction-detail-label">Min Received</span>
-        <span className="transaction-detail-value">{minReceived} {toTokenSymbol}</span>
-      </div>
+            {!shouldHideRecipientRow && (
+              <div className="transaction-detail">
+                <span className="transaction-detail-label">Recipient Address</span>
+                <div className="flex items-center gap-2">
+                  {!isEditing && displayAddress ? (
+                    <Tooltip delayDuration={200}>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-2 flex-1">
+                          <span 
+                            className="transaction-detail-value cursor-pointer hover:text-white transition-colors"
+                            onClick={handleEditClick}
+                          >
+                            {truncatedAddress}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleEditClick}
+                            className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+                          >
+                            <Edit3 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <span className="text-xs break-all">{displayAddress}</span>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <Input
+                      type="text"
+                      placeholder={placeholderText}
+                      value={tempAddress}
+                      onChange={(e) => handleAddressChange(e.target.value)}
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
+                      className="h-8 px-2 py-1 bg-token-selector border-0 focus:ring-0 shadow-none text-xs font-medium min-w-0 flex-1"
+                      autoFocus={isEditing}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      <div className="transaction-detail">
-        <span className="transaction-detail-label">Slippage</span>
-        <Select value={slippage.toString()} onValueChange={(value) => handleSlippageClick(parseFloat(value))}>
-          <SelectTrigger className="slippage-selector w-[5.5rem] h-8 border-0 focus:ring-0 shadow-none !bg-token-selector">
-            <span className="font-medium">{slippage}%</span>
-          </SelectTrigger>
-          <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
-            {presetSlippages.map((preset) => (
-              <SelectItem key={preset} value={preset.toString()} className="cursor-pointer [&>span:first-child]:hidden pl-3">
-                <span className="font-medium">{preset}%</span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
+      </motion.div>
+    </>
   );
 };

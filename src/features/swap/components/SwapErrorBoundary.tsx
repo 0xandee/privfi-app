@@ -36,9 +36,6 @@ interface SwapErrorBoundaryProps {
 
 export const SwapErrorBoundary: React.FC<SwapErrorBoundaryProps> = ({ children }) => {
   const handleError = (error: Error) => {
-    // Log swap-specific errors
-    console.error('Swap component error:', error);
-    
     // You could send this to an error tracking service
     // trackError('swap', error);
   };

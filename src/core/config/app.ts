@@ -21,3 +21,13 @@ export const API_CONFIG = {
     timeout: 10000,
   },
 } as const;
+
+export const RPC_CONFIG = {
+  // Use a more reliable RPC endpoint for Typhoon SDK
+  starknetMainnet: 'https://starknet-mainnet.public.blastapi.io',
+  // Alternative endpoints in case the primary fails
+  fallbackEndpoints: [
+    'https://starknet-mainnet.infura.io/v3/YOUR_API_KEY',
+    'https://free-rpc.nethermind.io/mainnet-juno',
+  ],
+} as const;

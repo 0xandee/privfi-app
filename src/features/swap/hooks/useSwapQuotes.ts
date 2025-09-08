@@ -21,6 +21,7 @@ export interface SwapQuoteResult {
   error: string | null;
   refetch: () => void;
   selectQuote: (quote: AVNUQuote) => void;
+  clearQuotes: () => void;
   formattedQuote: ReturnType<typeof formatQuoteForDisplay> | null;
   isExpired: boolean;
   timeToExpiry: number; // in seconds
@@ -81,7 +82,6 @@ export const useSwapQuotes = ({
       // Convert to BigInt and then back to string
       return BigInt(fullNumberString).toString();
     } catch (error) {
-      console.error('Error converting amount to smallest unit:', error);
       // Fallback to original method for backwards compatibility
       return (parseFloat(amount) * Math.pow(10, decimals)).toString();
     }
@@ -160,6 +160,14 @@ export const useSwapQuotes = ({
     refetch();
   }, [queryClient, queryKey, refetch]);
 
+  // Clear quotes and reset state for swap direction
+  const clearQuotes = useCallback(() => {
+    setSelectedQuote(null);
+    setTimeToExpiry(0);
+    queryClient.removeQueries({ queryKey });
+    queryClient.invalidateQueries({ queryKey });
+  }, [queryClient, queryKey]);
+
   // Check if selected quote is expired
   const isExpired = selectedQuote ? isAVNUQuoteExpired(selectedQuote) : false;
 
@@ -185,6 +193,7 @@ export const useSwapQuotes = ({
     error: errorMessage,
     refetch: handleRefetch,
     selectQuote,
+    clearQuotes,
     formattedQuote,
     isExpired,
     timeToExpiry,

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { Token, SwapQuote } from '@/shared/types';
 import { STARKNET_TOKENS } from '@/constants/tokens';
+import { SwapProgress } from '../types/swap';
 
 interface SwapState {
   // Form state
@@ -16,6 +17,16 @@ interface SwapState {
   selectedQuote: SwapQuote | null;
   isLoadingQuotes: boolean;
   quotesError: string | null;
+  
+  // Execution state
+  isExecuting: boolean;
+  executionProgress?: SwapProgress;
+  
+  // Privacy configuration
+  privacy: {
+    recipientAddress: string;
+    isEnabled: boolean; // Always true by default for private swaps
+  };
   
   // Settings
   settings: {
@@ -39,6 +50,14 @@ interface SwapActions {
   setQuotesLoading: (loading: boolean) => void;
   setQuotesError: (error: string | null) => void;
   
+  // Execution actions
+  setExecuting: (executing: boolean) => void;
+  setExecutionProgress: (progress: SwapProgress | undefined) => void;
+  
+  // Privacy actions
+  setRecipientAddress: (address: string) => void;
+  setPrivacyEnabled: (enabled: boolean) => void;
+  
   // Utility actions
   swapTokens: () => void;
   resetForm: () => void;
@@ -60,6 +79,14 @@ const initialState: SwapState = {
   selectedQuote: null,
   isLoadingQuotes: false,
   quotesError: null,
+  
+  isExecuting: false,
+  executionProgress: undefined,
+  
+  privacy: {
+    recipientAddress: '',
+    isEnabled: true, // Always enabled for private swaps
+  },
   
   settings: {
     defaultSlippage: 0.5,
@@ -86,6 +113,18 @@ export const useSwapStore = create<SwapStore>()(
         setSelectedQuote: (quote) => set({ selectedQuote: quote }),
         setQuotesLoading: (loading) => set({ isLoadingQuotes: loading }),
         setQuotesError: (error) => set({ quotesError: error }),
+        
+        // Execution actions
+        setExecuting: (executing) => set({ isExecuting: executing }),
+        setExecutionProgress: (progress) => set({ executionProgress: progress }),
+        
+        // Privacy actions
+        setRecipientAddress: (address) => set((state) => ({
+          privacy: { ...state.privacy, recipientAddress: address }
+        })),
+        setPrivacyEnabled: (enabled) => set((state) => ({
+          privacy: { ...state.privacy, isEnabled: enabled }
+        })),
         
         // Utility actions
         swapTokens: () => {
@@ -117,6 +156,7 @@ export const useSwapStore = create<SwapStore>()(
           fromToken: state.fromToken,
           toToken: state.toToken,
           slippage: state.slippage,
+          privacy: state.privacy,
           settings: state.settings,
         }),
       }

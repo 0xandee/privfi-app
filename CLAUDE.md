@@ -10,12 +10,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Lint code**: `npm run lint`
 - **Preview production build**: `npm run preview`
 - **Run E2E tests**: `npx playwright test` (tests expect server on port 8084)
+- **Deploy to Vercel**: `vercel --prod` (requires Vercel CLI installed)
 
 Note: This project uses Yarn 4.8.1 with PnP. All npm commands work via Yarn compatibility layer.
 
 ## Project Architecture
 
-This is a React-based cryptocurrency swap application built with Vite and TypeScript, using shadcn/ui components. The project follows a **feature-based architecture** with clear module boundaries and centralized state management.
+This is **Privfi** - a React-based private cryptocurrency swap application built with Vite and TypeScript, using shadcn/ui components. The project follows a **feature-based architecture** with clear module boundaries and centralized state management.
+
+**Current Deployment**: https://privfi-app.vercel.app
 
 ### Tech Stack
 - **Frontend**: React 18 + TypeScript
@@ -40,12 +43,19 @@ src/
 │   │   ├── hooks/     # Swap-specific hooks
 │   │   ├── services/  # DEX integrations & factory pattern
 │   │   ├── store/     # Zustand store for swap state
-│   │   └── types/     # Swap-related TypeScript types
-│   └── wallet/        # All wallet-related functionality
-│       ├── components/ # Wallet UI components
-│       ├── hooks/     # Wallet connection hooks
-│       ├── store/     # Zustand store for wallet state
-│       └── types/     # Wallet-related TypeScript types
+│   │   ├── types/     # Swap-related TypeScript types
+│   │   └── utils/     # Swap utilities (Typhoon storage, etc.)
+│   ├── wallet/        # All wallet-related functionality
+│   │   ├── components/ # Wallet UI components
+│   │   ├── hooks/     # Wallet connection hooks
+│   │   ├── store/     # Zustand store for wallet state
+│   │   └── types/     # Wallet-related TypeScript types
+│   └── withdraw/      # All withdraw-related functionality
+│       ├── components/ # Withdraw UI components
+│       ├── hooks/     # Withdraw-specific hooks
+│       ├── services/  # Withdraw service implementations
+│       ├── store/     # Zustand store for withdraw state
+│       └── types/     # Withdraw-related TypeScript types
 ├── shared/            # Shared across features
 │   ├── components/ui/ # shadcn/ui component library
 │   ├── hooks/        # Generic reusable hooks
@@ -64,6 +74,7 @@ src/
 **Zustand Stores with Persistence:**
 - `features/swap/store/swapStore.ts` - Swap form state, quotes, settings with localStorage persistence
 - `features/wallet/store/walletStore.ts` - Wallet connection state
+- `features/withdraw/store/withdrawStore.ts` - Withdraw form state and transaction management
 - `shared/store/appStore.ts` - Global application state
 
 **React Query:** Server state management for API calls and caching
@@ -73,14 +84,16 @@ src/
 **Factory Pattern for DEX Integration:**
 - `DEXFactory` - Manages multiple DEX providers with lazy loading
 - `BaseDEX` - Abstract base class defining DEX interface
-- `AVNUService` - Current AVNU implementation
+- `AVNUService` - AVNU DEX aggregator implementation
+- `TyphoonService` - Privacy-focused DEX with zk-SNARK technology
 - Registry pattern supports easy addition of new DEX providers (MySwap, 10KSwap)
 
 ### Import Path Strategy
 
 Modular imports through feature boundaries:
 - `@/features/swap` - All swap functionality
-- `@/features/wallet` - All wallet functionality  
+- `@/features/wallet` - All wallet functionality
+- `@/features/withdraw` - All withdraw functionality
 - `@/shared` - Shared utilities, components, types
 - `@/core` - Core infrastructure
 
@@ -112,7 +125,9 @@ Each feature module exports through index files for clean API boundaries.
 - **StarkNet React** (`@starknet-react/core`) for primary wallet integration
 - **Wallet Connectors**: Argent and Braavos with fallback support
 - **AVNU DEX Aggregator**: Optimal swap routing with "Privfi" integrator (0.15% fees)
+- **Typhoon Privacy Protocol**: zk-SNARK based private transactions with SDK integration
 - **Quote Management**: Expiry checking, price impact calculation, multi-route aggregation
+- **Privacy Features**: Private swaps and withdrawals with note commitment/nullifier system
 
 ### Styling System
 - **Tailwind CSS** with custom classes in `index.css`
@@ -131,3 +146,15 @@ Each feature module exports through index files for clean API boundaries.
 - **Yarn 4.8.1** with PnP (Plug'n'Play) system
 - npm commands work through Yarn compatibility layer
 - Package manager enforced via `packageManager` field in package.json
+
+### Deployment Configuration
+- **Vercel**: Configured with `vercel.json` for production deployment
+- **WASM Support**: Special headers configured for `.wasm` and `.zkey` files required by Typhoon SDK
+- **Environment Variables**: `VITE_DISABLE_TYPHOON` controls Typhoon SDK integration
+- **Build Output**: Static files served from `dist/` directory
+- **Custom Domain**: https://privfi-app.vercel.app
+
+### WASM and Cryptographic Assets
+- Large WASM files in `public/wasm/` for zero-knowledge proof generation
+- Files include `deposit.wasm`, `withdraw.wasm`, and `withdraw_0001.zkey` (~46MB)
+- Requires specific CORS headers: `Cross-Origin-Embedder-Policy: require-corp` and `Cross-Origin-Opener-Policy: same-origin`
