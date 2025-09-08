@@ -49,6 +49,15 @@ export default defineConfig(({ mode }) => ({
   build: {
     target: 'esnext',
     assetsInlineLimit: 0,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          starknet: ['@starknet-react/core', '@starknet-io/get-starknet', 'starknet'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-toast', '@radix-ui/react-select']
+        }
+      }
+    }
   },
   assetsInclude: ['**/*.wasm', '**/*.zkey'],
 }));
