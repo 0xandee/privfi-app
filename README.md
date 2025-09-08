@@ -1,73 +1,199 @@
-# Welcome to your Lovable project
+# Privfi - Private Cryptocurrency Swapping Application
 
-## Project info
+**Privfi** is a cutting-edge React-based private cryptocurrency swap application that combines the power of decentralized exchange aggregation with privacy-preserving technology. Built with modern web technologies and integrated with StarkNet blockchain, Privfi offers users the ability to perform anonymous, secure cryptocurrency swaps.
 
-**URL**: https://lovable.dev/projects/9e7f321c-363d-47c8-86a1-9238adbe62ad
+🌐 **Live Application**: https://privfi-app.vercel.app
 
-## How can I edit this code?
+## ✨ Key Features
 
-There are several ways of editing your application.
+### 🔒 Privacy-First Design
+- **Typhoon Protocol Integration** - Zero-knowledge proof-based private transactions using zk-SNARKs
+- **Anonymous Swaps** - Complete transaction privacy with note commitment/nullifier system
+- **Secure Withdrawals** - Privacy-preserving withdrawal mechanisms
 
-**Use Lovable**
+### 💱 Advanced DEX Integration
+- **AVNU DEX Aggregator** - Optimal swap routing with "Privfi" integrator (0.15% fees)
+- **Multi-DEX Support** - Factory pattern architecture supporting multiple DEX providers
+- **Real-time Quotes** - Live pricing with expiry checking and price impact calculations
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/9e7f321c-363d-47c8-86a1-9238adbe62ad) and start prompting.
+### 🎨 Modern User Interface
+- **Responsive Design** - Mobile-first approach with beautiful animations
+- **Dark/Light Themes** - Comprehensive theming with `next-themes`
+- **Intuitive UX** - Clean, crypto-focused interface with custom CSS classes
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🚀 Technology Stack
 
-**Use your preferred IDE**
+### Frontend Architecture
+- **React 18** with TypeScript for type-safe development
+- **Vite** with SWC plugin for lightning-fast builds and hot-reload
+- **shadcn/ui** component library built on Radix UI primitives
+- **Tailwind CSS** with custom design tokens and CSS variables
+- **React Router v6** for client-side navigation
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### State Management
+- **Zustand** stores with localStorage persistence for client state
+- **TanStack Query (React Query)** for server state management and caching
+- **React Hook Form** with Zod validation for form handling
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Blockchain Integration
+- **StarkNet React** (`@starknet-react/core`) for wallet connectivity
+- **Wallet Support** - Argent and Braavos connectors with fallback mechanisms
+- **Web3 Integration** - Complete StarkNet ecosystem support
 
-Follow these steps:
+### Privacy Technology
+- **Typhoon SDK** - zk-SNARK proof generation for private transactions
+- **WASM Support** - Large cryptographic files (~46MB) for zero-knowledge proofs
+- **Advanced Cryptography** - Commitment/nullifier schemes for transaction privacy
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 📁 Project Architecture
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Privfi follows a **feature-based architecture** with clear module boundaries:
 
-# Step 3: Install the necessary dependencies.
-npm i
+```
+src/
+├── features/           # Feature modules
+│   ├── swap/          # All swap-related functionality
+│   │   ├── components/ # Swap UI components
+│   │   ├── hooks/     # Swap-specific hooks  
+│   │   ├── services/  # DEX integrations & factory pattern
+│   │   ├── store/     # Zustand store for swap state
+│   │   ├── types/     # Swap-related TypeScript types
+│   │   └── utils/     # Swap utilities (Typhoon storage, etc.)
+│   ├── wallet/        # All wallet-related functionality
+│   └── withdraw/      # All withdraw-related functionality
+├── shared/            # Shared across features
+│   ├── components/ui/ # shadcn/ui component library
+│   ├── hooks/        # Generic reusable hooks
+│   ├── store/        # Global app state
+│   ├── types/        # Common TypeScript types
+│   └── utils/        # Utility functions and helpers
+├── core/             # Core application infrastructure
+│   ├── api/          # Base API configuration
+│   ├── config/       # App configuration
+│   └── providers/    # Core React providers
+└── pages/            # Route-based page components
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+## 🛠️ Development Setup
+
+### Prerequisites
+- **Node.js** (v18+) - [Install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Yarn 4.8.1** with PnP (Plug'n'Play) system
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/0xandee/lovable-privfi-app.git
+
+# Navigate to project directory
+cd lovable-privfi-app
+
+# Install dependencies (uses Yarn 4.8.1 with PnP)
+npm install
+
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Development Commands
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+# Development
+npm run dev          # Start dev server (port 8080, IPv6 accessible)
+npm run build:dev    # Build for development
 
-**Use GitHub Codespaces**
+# Production
+npm run build        # Build for production  
+npm run preview      # Preview production build
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# Code Quality
+npm run lint         # Lint code with ESLint
 
-## What technologies are used for this project?
+# Testing
+npx playwright test  # Run E2E tests (expects server on port 8084)
 
-This project is built with:
+# Deployment
+vercel --prod       # Deploy to Vercel (requires Vercel CLI)
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 🔧 Configuration
 
-## How can I deploy this project?
+### Environment Variables
+- `VITE_DISABLE_TYPHOON` - Controls Typhoon SDK integration
 
-Simply open [Lovable](https://lovable.dev/projects/9e7f321c-363d-47c8-86a1-9238adbe62ad) and click on Share -> Publish.
+### Package Management
+- Uses **Yarn 4.8.1** with PnP system
+- npm commands work through Yarn compatibility layer
+- Package manager enforced via `packageManager` field in package.json
 
-## Can I connect a custom domain to my Lovable project?
+### Deployment Configuration
+- **Vercel** deployment with `vercel.json` configuration
+- **WASM Support** with special CORS headers for `.wasm` and `.zkey` files
+- **Custom Domain** support with HTTPS
 
-Yes, you can!
+## 🎯 Key Components
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Service Layer (Factory Pattern)
+- `DEXFactory` - Manages multiple DEX providers with lazy loading
+- `BaseDEX` - Abstract base class defining DEX interface  
+- `AVNUService` - AVNU DEX aggregator implementation
+- `TyphoonService` - Privacy-focused DEX with zk-SNARK technology
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### State Management
+- `features/swap/store/swapStore.ts` - Swap state with persistence
+- `features/wallet/store/walletStore.ts` - Wallet connection state  
+- `features/withdraw/store/withdrawStore.ts` - Withdraw transaction state
+- `shared/store/appStore.ts` - Global application state
+
+### UI Components
+- Feature-specific error boundaries prevent app-wide crashes
+- Modular component architecture with clean separation
+- Custom CSS classes for crypto-specific styling
+
+## 🚀 Deployment
+
+The application is deployed on **Vercel** with:
+- Automatic deployments from main branch
+- WASM file support with proper CORS headers  
+- Custom domain configuration
+- Environment variable management
+
+**Production URL**: https://privfi-app.vercel.app
+
+## 🔐 Security Features
+
+- **Privacy-Preserving Swaps** - Complete transaction anonymity
+- **Secure Wallet Integration** - Safe connection patterns
+- **Error Boundaries** - Graceful error handling
+- **Type Safety** - Full TypeScript coverage
+- **Input Validation** - Comprehensive form validation with Zod
+
+## 📊 Performance
+
+- **Fast Builds** - Vite with SWC for optimal build performance
+- **Code Splitting** - Automatic route-based code splitting
+- **Lazy Loading** - Component and service lazy loading
+- **Optimized Assets** - Efficient asset bundling and caching
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🔗 Links
+
+- **Live App**: https://privfi-app.vercel.app
+- **Repository**: https://github.com/0xandee/lovable-privfi-app
+- **Documentation**: See `CLAUDE.md` for detailed technical documentation
+
+---
+
+Built with ❤️ for the future of private DeFi
