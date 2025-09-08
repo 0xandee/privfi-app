@@ -10,8 +10,15 @@ const WithdrawInterface = () => {
   const walletConnection = useWalletConnection();
 
   return (
-    <div className="min-h-screen bg-background p-4 flex flex-col items-center justify-center">
-      <div className="w-full max-w-lg bg-[#1C1C1C] rounded-xl p-6">
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Top Header with Logo */}
+      <div className="p-4">
+        <img src="/PrivFi.svg" alt="PrivFi" className="h-8 w-auto" />
+      </div>
+      
+      {/* Main Content Centered */}
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-lg bg-[#1C1C1C] rounded-xl p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <Button
@@ -47,7 +54,7 @@ const WithdrawInterface = () => {
           walletAddress={walletConnection.address}
           isConnected={walletConnection.isConnected}
         />
-
+        </div>
       </div>
     </div>
   );

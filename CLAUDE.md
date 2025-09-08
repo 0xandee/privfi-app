@@ -10,12 +10,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Lint code**: `npm run lint`
 - **Preview production build**: `npm run preview`
 - **Run E2E tests**: `npx playwright test` (tests expect server on port 8084)
+- **Deploy to Vercel**: `vercel --prod` (requires Vercel CLI installed)
 
 Note: This project uses Yarn 4.8.1 with PnP. All npm commands work via Yarn compatibility layer.
 
 ## Project Architecture
 
-This is a React-based cryptocurrency swap application built with Vite and TypeScript, using shadcn/ui components. The project follows a **feature-based architecture** with clear module boundaries and centralized state management.
+This is **Privfi** - a React-based private cryptocurrency swap application built with Vite and TypeScript, using shadcn/ui components. The project follows a **feature-based architecture** with clear module boundaries and centralized state management.
+
+**Current Deployment**: https://privfi-app.vercel.app
 
 ### Tech Stack
 - **Frontend**: React 18 + TypeScript
@@ -143,3 +146,15 @@ Each feature module exports through index files for clean API boundaries.
 - **Yarn 4.8.1** with PnP (Plug'n'Play) system
 - npm commands work through Yarn compatibility layer
 - Package manager enforced via `packageManager` field in package.json
+
+### Deployment Configuration
+- **Vercel**: Configured with `vercel.json` for production deployment
+- **WASM Support**: Special headers configured for `.wasm` and `.zkey` files required by Typhoon SDK
+- **Environment Variables**: `VITE_DISABLE_TYPHOON` controls Typhoon SDK integration
+- **Build Output**: Static files served from `dist/` directory
+- **Custom Domain**: https://privfi-app.vercel.app
+
+### WASM and Cryptographic Assets
+- Large WASM files in `public/wasm/` for zero-knowledge proof generation
+- Files include `deposit.wasm`, `withdraw.wasm`, and `withdraw_0001.zkey` (~46MB)
+- Requires specific CORS headers: `Cross-Origin-Embedder-Policy: require-corp` and `Cross-Origin-Opener-Policy: same-origin`
