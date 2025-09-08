@@ -21,7 +21,7 @@ const SwapInterface = () => {
 
       {/* Main Content Centered */}
       <div className="flex-1 flex items-center justify-center p-4 flex-col">
-        <div className="w-full max-w-lg bg-[#1C1C1C] rounded-xl p-3 sm:p-6">
+        <div className="w-full max-w-lg bg-[#1C1C1C] rounded-xl p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <span className="text-lg font-medium text-white">Private Swap</span>
