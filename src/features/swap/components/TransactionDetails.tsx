@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip';
-import { Input } from '@/shared/components/ui/input';
 import { Button } from '@/shared/components/ui/button';
-import { Info, User, Edit3, ChevronDown, ChevronUp } from 'lucide-react';
-import { useSwapStore } from '../store/swapStore';
+import { Info, ChevronDown } from 'lucide-react';
 import { useAnimations } from '@/shared/hooks/useAnimations';
 import { AnimatedNumber } from '@/shared/components/ui/animated-number';
+import { Token } from '@/constants/tokens';
+import { TokenPrice } from '@/shared/hooks/useTokenPrices';
+import { getTokenUSDDisplay } from '@/shared/utils/priceUtils';
 
 interface TransactionDetailsProps {
   rate?: string;
@@ -19,7 +20,8 @@ interface TransactionDetailsProps {
   slippage?: number;
   onSlippageChange?: (slippage: number) => void;
   toTokenSymbol?: string;
-  walletAddress?: string;
+  toToken?: Token;
+  priceData?: { [address: string]: TokenPrice };
 }
 
 export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
@@ -33,26 +35,40 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
   slippage = 0.5,
   onSlippageChange,
   toTokenSymbol = "",
-  walletAddress,
+  toToken,
+  priceData,
 }) => {
   const { variants, transitions, hover } = useAnimations();
-  const { privacy, setRecipientAddress } = useSwapStore();
-  const [tempAddress, setTempAddress] = useState(privacy.recipientAddress || walletAddress || '');
-  const [isEditing, setIsEditing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Update tempAddress when wallet connects/disconnects or changes
-  React.useEffect(() => {
-    if (!privacy.recipientAddress && walletAddress) {
-      setTempAddress(walletAddress);
-      setRecipientAddress(walletAddress);
-    } else if (privacy.recipientAddress && walletAddress && 
-               privacy.recipientAddress.toLowerCase() !== walletAddress.toLowerCase()) {
-      // If stored address doesn't match current wallet, update it
-      setTempAddress(walletAddress);
-      setRecipientAddress(walletAddress);
+  // Calculate Min Received USD value
+  const minReceivedUsd = (() => {
+    if (!minReceived || !toToken || !priceData || parseFloat(minReceived) <= 0) {
+      return null;
     }
-  }, [walletAddress, privacy.recipientAddress, setRecipientAddress]);
+
+    // Find price data for the to token
+    const normalizedAddr = toToken.address.toLowerCase();
+    let tokenPrice = null;
+
+    // Try multiple address formats to find a match
+    if (priceData[normalizedAddr]) {
+      tokenPrice = priceData[normalizedAddr];
+    } else if (normalizedAddr.length === 65) {
+      const paddedAddr = '0x0' + normalizedAddr.slice(2);
+      if (priceData[paddedAddr]) tokenPrice = priceData[paddedAddr];
+    } else if (normalizedAddr.startsWith('0x0') && normalizedAddr.length === 66) {
+      const unpaddedAddr = '0x' + normalizedAddr.slice(3);
+      if (priceData[unpaddedAddr]) tokenPrice = priceData[unpaddedAddr];
+    }
+
+    if (!tokenPrice || tokenPrice.priceInUSD <= 0) {
+      return null;
+    }
+
+    return getTokenUSDDisplay(minReceived, tokenPrice.priceInUSD, toToken.decimals);
+  })();
+
 
   const presetSlippages = [0, 0.1, 0.5, 1];
 
@@ -96,49 +112,10 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
     setIsExpanded(!isExpanded);
   };
 
-  const handleAddressChange = (value: string) => {
-    setTempAddress(value);
-    setRecipientAddress(value);
-  };
-
-  const handleUseWallet = () => {
-    if (walletAddress) {
-      setTempAddress(walletAddress);
-      setRecipientAddress(walletAddress);
-      setIsEditing(false);
-    }
-  };
-
-  const handleEditClick = () => {
-    setIsEditing(true);
-  };
-
-  const handleInputFocus = () => {
-    setIsEditing(true);
-  };
-
-  const handleInputBlur = () => {
-    setIsEditing(false);
-  };
-
-  const displayAddress = tempAddress || walletAddress || '';
-  const truncatedAddress = displayAddress 
-    ? displayAddress.length > 16
-      ? `${displayAddress.slice(0, 6)}...${displayAddress.slice(-4)}`
-      : displayAddress
-    : '';
-  
-  const placeholderText = !displayAddress ? 'Enter recipient address' : '';
-  
-  // Hide recipient address row when it matches the wallet address (default behavior)
-  // Use case-insensitive comparison and handle potential truncation issues
-  const shouldHideRecipientRow = displayAddress && walletAddress && 
-    displayAddress.toLowerCase() === walletAddress.toLowerCase();
-
   return (
     <>
       <motion.div 
-        className="crypto-card px-4 py-4 mt-4"
+        className="crypto-card p-4 mt-3"
         variants={variants.slideUp}
         initial="initial"
         animate="animate"
@@ -149,10 +126,10 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
             value={rateWithUsd ? (
               rateWithUsd.split(' (')[0] + ' (' + rateWithUsd.split(' (')[1]
             ) : rate}
-            className="transaction-detail-value text-sm"
+            className="transaction-detail-value text-xs"
           />
           <motion.div
-            whileTap={{ scale: 0.95 }}
+            whileTap={{ scale: 0.9 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
           >
@@ -160,7 +137,7 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
               variant="ghost"
               size="sm"
               onClick={handleToggleExpand}
-              className={`flex items-center gap-2 h-8 px-2 text-gray-400 hover:text-white ${transitions.colors}`}
+              className={`flex items-center gap-2 h-8 px-3 text-muted-foreground ${transitions.colors}`}
             >
               <span className="text-xs text-transaction-detail">
                 {isExpanded ? 'Hide details' : 'Show details'}
@@ -169,7 +146,7 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
                 animate={{ rotate: isExpanded ? 180 : 0 }}
                 transition={{ duration: 0.2 }}
               >
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
               </motion.div>
             </Button>
           </motion.div>
@@ -180,13 +157,13 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
           {isExpanded && (
             <motion.div 
               className=""
-              variants={variants.expand}
-              initial="initial"
-              animate="animate"
-              exit="exit"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
               style={{ overflow: 'hidden' }}
             >
-              <div className="pt-4 space-y-4">
+              <div className="pt-2 space-y-4">
                 <div className="transaction-detail">
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
@@ -215,14 +192,26 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
               <AnimatedNumber value={`$${totalFeeAmount}`} className="transaction-detail-value" />
             </div>
 
-            <div className="transaction-detail">
-              <span className="transaction-detail-label">Min Received</span>
-              <AnimatedNumber value={`${minReceived} ${toTokenSymbol}`} className="transaction-detail-value" />
-            </div>
+            {parseFloat(minReceived) > 0 && (
+              <div className="transaction-detail">
+                <span className="transaction-detail-label">Min Received</span>
+                <div className="transaction-detail-value">
+                  <AnimatedNumber 
+                    value={`${minReceived} ${toTokenSymbol}`}
+                    className="" 
+                  />
+                  {minReceivedUsd && (
+                    <span className="text-muted-foreground ml-1">
+                      ≈ {minReceivedUsd}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="transaction-detail">
               <span className="transaction-detail-label">Slippage</span>
-              <div className="flex gap-1">
+              <div className="flex gap-2">
                 {presetSlippages.map((preset) => (
                   <motion.button
                     key={preset}
@@ -231,7 +220,7 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
                       slippage === preset ? 'bg-white text-black hover:bg-white' : ''
                     } ${transitions.default}`}
                     whileHover={hover.scale}
-                    whileTap={{ scale: 0.95 }}
+                    whileTap={{ scale: 0.9 }}
                     transition={{ duration: 0.2, ease: 'easeOut' }}
                   >
                     {preset}%
@@ -240,49 +229,6 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({
               </div>
             </div>
 
-            {!shouldHideRecipientRow && (
-              <div className="transaction-detail">
-                <span className="transaction-detail-label">Recipient Address</span>
-                <div className="flex items-center gap-2">
-                  {!isEditing && displayAddress ? (
-                    <Tooltip delayDuration={200}>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-2 flex-1">
-                          <span 
-                            className="transaction-detail-value cursor-pointer hover:text-white transition-colors"
-                            onClick={handleEditClick}
-                          >
-                            {truncatedAddress}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleEditClick}
-                            className="h-6 w-6 p-0 text-gray-400 hover:text-white"
-                          >
-                            <Edit3 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs">
-                        <span className="text-xs break-all">{displayAddress}</span>
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    <Input
-                      type="text"
-                      placeholder={placeholderText}
-                      value={tempAddress}
-                      onChange={(e) => handleAddressChange(e.target.value)}
-                      onFocus={handleInputFocus}
-                      onBlur={handleInputBlur}
-                      className="h-8 px-2 py-1 bg-token-selector border-0 focus:ring-0 shadow-none text-xs font-medium min-w-0 flex-1"
-                      autoFocus={isEditing}
-                    />
-                  )}
-                </div>
-              </div>
-            )}
               </div>
             </motion.div>
           )}

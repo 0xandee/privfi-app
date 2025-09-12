@@ -43,7 +43,7 @@ export const PrivacyConfig: React.FC<PrivacyConfigProps> = ({ walletAddress }) =
             placeholder={placeholderText}
             value={tempAddress}
             onChange={(e) => handleAddressChange(e.target.value)}
-            className="token-input text-sm flex-1"
+            className="token-input text-xs flex-1"
           />
           {walletAddress && (
             <Button

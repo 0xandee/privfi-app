@@ -76,7 +76,7 @@ export const useSwapExecution = ({
       clearTimeout(progressClearTimeoutRef.current);
       progressClearTimeoutRef.current = null;
     }
-    
+
     // Schedule new timeout
     progressClearTimeoutRef.current = setTimeout(() => {
       updateProgress(undefined);
@@ -118,8 +118,8 @@ export const useSwapExecution = ({
       const now = Date.now();
       updateProgress({
         phase: 'processing-withdrawal',
-        message: 'Processing withdrawal...',
-        estimatedTimeMs: 47000, // Updated: was 45000ms, actual ~46200ms + buffer
+        message: 'Processing withdrawal',
+        estimatedTimeMs: 60000, // Updated: was 45000ms, actual ~46200ms + buffer
         startedAt: now
       });
 
@@ -185,13 +185,13 @@ export const useSwapExecution = ({
           // Don't clear progress during execution phases that should continue
           const isActivePhase = currentProgress && [
             'preparing',
-            'building-swap', 
+            'building-swap',
             'generating-deposit',
             'awaiting-signature',
             'confirming',
             'processing-withdrawal'
           ].includes(currentProgress.phase);
-          
+
           if (!isActivePhase) {
             setExecutionState(prev => ({
               ...prev,
@@ -217,7 +217,7 @@ export const useSwapExecution = ({
           const now = Date.now();
           updateProgress({
             phase: 'awaiting-signature',
-            message: 'Awaiting wallet signature...',
+            message: 'Awaiting wallet signature',
             estimatedTimeMs: undefined, // No estimation - user dependent
             startedAt: now
           });
@@ -225,21 +225,21 @@ export const useSwapExecution = ({
         break;
       case 'success': {
         const txHash = transactionData?.transaction_hash || null;
-        
+
         // Prevent processing the same transaction multiple times
         if (txHash && successProcessedRef.current === txHash) {
           break;
         }
-        
+
         // Don't process if withdrawal was already completed for this transaction
         if (txHash && withdrawalCompletedRef.current === txHash) {
           break;
         }
-        
+
         if (txHash) {
           successProcessedRef.current = txHash;
         }
-        
+
         setExecutionState(prev => ({
           ...prev,
           isLoading: false,
@@ -255,7 +255,7 @@ export const useSwapExecution = ({
 
         updateProgress({
           phase: 'confirming',
-          message: 'Transaction confirming...',
+          message: 'Transaction confirming',
           estimatedTimeMs: 3000, // Updated: Only blockchain confirmation, not withdrawal
           startedAt: now
         });
@@ -302,7 +302,7 @@ export const useSwapExecution = ({
         // Show success toast (only once per transaction)
         if (txHash && toastShownRef.current !== txHash) {
           toastShownRef.current = txHash;
-          toast.success(executionState.isPrivateSwap ? 'Swap successful! Starting withdrawal...' : 'Swap successful!', {
+          toast.success(executionState.isPrivateSwap ? 'Swap successful! Starting withdrawal' : 'Swap successful!', {
             duration: 8000, // 8 seconds
             action: {
               label: React.createElement('span', { className: 'flex items-center gap-1' }, [
@@ -394,7 +394,7 @@ export const useSwapExecution = ({
       const now = Date.now();
       updateProgress({
         phase: 'preparing',
-        message: 'Preparing swap transaction...',
+        message: 'Preparing swap transaction',
         estimatedTimeMs: 1000, // Updated: was 3000ms, actual ~500ms
         startedAt: now
       });
@@ -404,7 +404,7 @@ export const useSwapExecution = ({
       const now2 = Date.now();
       updateProgress({
         phase: 'building-swap',
-        message: 'Building swap calls with AVNU...',
+        message: 'Building swap calls with AVNU',
         estimatedTimeMs: 2000, // Updated: was 5000ms, actual ~1400ms
         startedAt: now2
       });
@@ -427,7 +427,7 @@ export const useSwapExecution = ({
         const now3 = Date.now();
         updateProgress({
           phase: 'generating-deposit',
-          message: 'Generating private deposit calls...',
+          message: 'Generating private deposit calls',
           estimatedTimeMs: 15000, // Updated: was 10000ms, actual ~14200ms
           startedAt: now3
         });
@@ -453,7 +453,7 @@ export const useSwapExecution = ({
         const now4 = Date.now();
         updateProgress({
           phase: 'awaiting-signature',
-          message: 'Ready to sign - please check your wallet...',
+          message: 'Ready to sign - please check your wallet',
           estimatedTimeMs: undefined, // No estimation - user dependent
           startedAt: now4
         });
@@ -480,7 +480,7 @@ export const useSwapExecution = ({
         const now5 = Date.now();
         updateProgress({
           phase: 'awaiting-signature',
-          message: 'Ready to sign regular swap - check your wallet...',
+          message: 'Ready to sign regular swap - check your wallet',
           estimatedTimeMs: undefined, // No estimation - user dependent
           startedAt: now5
         });

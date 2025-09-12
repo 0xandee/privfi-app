@@ -71,7 +71,7 @@ export function ProgressIndicator({
               isHorizontal ? "text-center" : ""
             )}>
               <p className={cn(
-                "text-sm font-medium",
+                "text-xs font-medium",
                 isCompleted ? "text-green-700 dark:text-green-400" : 
                 isCurrent ? "text-blue-700 dark:text-blue-400" : 
                 "text-gray-500 dark:text-gray-400"

@@ -95,11 +95,30 @@ const initialState: SwapState = {
   },
 };
 
+// Clean up any persisted recipient addresses from previous versions
+const cleanupPersistedData = () => {
+  try {
+    const stored = localStorage.getItem('swap-store');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed?.state?.privacy?.recipientAddress) {
+        parsed.state.privacy.recipientAddress = '';
+        localStorage.setItem('swap-store', JSON.stringify(parsed));
+      }
+    }
+  } catch (error) {
+  }
+};
+
 export const useSwapStore = create<SwapStore>()(
   devtools(
     persist(
-      (set, get) => ({
-        ...initialState,
+      (set, get) => {
+        // Clean up on store initialization
+        cleanupPersistedData();
+        
+        return {
+          ...initialState,
         
         // Form actions
         setFromAmount: (amount) => set({ fromAmount: amount }),
@@ -149,14 +168,14 @@ export const useSwapStore = create<SwapStore>()(
         updateSettings: (newSettings) => set((state) => ({
           settings: { ...state.settings, ...newSettings }
         })),
-      }),
+        };
+      },
       {
         name: 'swap-store',
         partialize: (state) => ({
           fromToken: state.fromToken,
           toToken: state.toToken,
           slippage: state.slippage,
-          privacy: state.privacy,
           settings: state.settings,
         }),
       }

@@ -108,7 +108,7 @@ const WithdrawCard: React.FC<WithdrawCardProps> = ({
                     placeholder="Recipient Address"
                     value={recipient.address}
                     onChange={(e) => handleRecipientAddressChange(recipient.id, e.target.value)}
-                    className="token-input text-sm"
+                    className="token-input text-xs"
                   />
                 </div>
                 <div className="w-20">
@@ -117,7 +117,7 @@ const WithdrawCard: React.FC<WithdrawCardProps> = ({
                     placeholder="%"
                     value={recipient.percentage}
                     onChange={(e) => handleRecipientPercentageChange(recipient.id, Number(e.target.value))}
-                    className="token-input text-sm text-center"
+                    className="token-input text-xs text-center"
                     min="0"
                     max="100"
                     step="0.01"
@@ -138,7 +138,7 @@ const WithdrawCard: React.FC<WithdrawCardProps> = ({
           </div>
 
           {/* Percentage Summary */}
-          <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center justify-between text-xs">
             <span className="text-gray-400">
               Total: {withdraw.totalPercentage.toFixed(2)}%
             </span>
@@ -161,7 +161,7 @@ const WithdrawCard: React.FC<WithdrawCardProps> = ({
 
         {/* Status Message */}
         {getStatusMessage() && (
-          <div className={`p-3 rounded-lg text-sm ${
+          <div className={`p-3 rounded-lg text-xs ${
             withdraw.status === 'error' 
               ? 'bg-red-900/20 border border-red-500/20 text-red-400'
               : withdraw.status === 'success'
@@ -199,7 +199,7 @@ const WithdrawCard: React.FC<WithdrawCardProps> = ({
       {/* Transaction History */}
       {withdraw.transactionHistory.length > 0 && (
         <div className="mt-6 space-y-2 pt-4 border-t border-gray-700">
-          <Label className="text-white text-sm">Recent Deposits</Label>
+          <Label className="text-white text-xs">Recent Deposits</Label>
           <div className="space-y-1 max-h-32 overflow-y-auto">
             {withdraw.transactionHistory.map((tx) => (
               <div

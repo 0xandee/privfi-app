@@ -35,7 +35,7 @@ export const useTimeEstimation = (progress: SwapProgress | undefined): UseTimeEs
     // Handle phases without time estimates (like awaiting-signature)
     if (!progress.estimatedTimeMs) {
       setRemainingTime(null);
-      
+
       // Still track elapsed time for phases without estimates
       const updateElapsedTime = () => {
         const now = Date.now();
@@ -52,14 +52,14 @@ export const useTimeEstimation = (progress: SwapProgress | undefined): UseTimeEs
       const now = Date.now();
       const elapsed = now - (progress.startedAt || now);
       const remaining = Math.max(0, (progress.estimatedTimeMs || 0) - elapsed);
-      
+
       setElapsedTime(elapsed);
       setRemainingTime(remaining);
     };
 
     // Update immediately
     updateTimes();
-    
+
     // Then update every second
     intervalRef.current = setInterval(updateTimes, 1000);
 
@@ -71,12 +71,12 @@ export const useTimeEstimation = (progress: SwapProgress | undefined): UseTimeEs
     };
   }, [progress?.startedAt, progress?.estimatedTimeMs, progress?.phase]);
 
-  const progressPercentage = elapsedTime && progress?.estimatedTimeMs 
+  const progressPercentage = elapsedTime && progress?.estimatedTimeMs
     ? Math.min(100, (elapsedTime / progress.estimatedTimeMs) * 100)
     : null;
 
-  const formattedRemainingTime = remainingTime !== null 
-    ? `~${Math.ceil(remainingTime / 1000)}s`
+  const formattedRemainingTime = remainingTime !== null
+    ? `~ ${Math.ceil(remainingTime / 1000)}s`
     : null;
 
   return {

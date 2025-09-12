@@ -190,7 +190,12 @@
   }
   
   .token-input {
-    @apply text-2xl font-medium placeholder:text-muted-foreground border-none outline-none w-full px-3 py-2 rounded-lg transition-colors;
+    @apply text-2xl font-light placeholder:text-muted-foreground border-none outline-none w-full px-3 py-2 rounded-lg transition-colors;
+    background-color: #1C1C1C;
+  }
+  
+  .token-input-compact {
+    @apply text-sm font-normal placeholder:text-muted-foreground border-none outline-none w-full px-2 py-1.5 rounded-lg transition-colors;
     background-color: #1C1C1C;
   }
   
@@ -208,17 +213,18 @@
   }
   
   .percentage-button {
-    @apply px-3 py-1.5 bg-percentage-button text-muted-foreground rounded-md hover:bg-percentage-button-hover transition-colors cursor-pointer text-sm font-medium;
+    @apply px-3 py-1.5 bg-percentage-button text-muted-foreground rounded-md hover:bg-percentage-button-hover transition-colors cursor-pointer text-xs font-medium;
   }
   
   .swap-button {
-    @apply w-full bg-primary text-primary-foreground hover:bg-primary-hover font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm;
+    @apply w-full bg-primary text-primary-foreground hover:bg-primary-hover font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
     padding: 1rem 1rem !important;
     height: auto !important;
+    font-size: 1rem !important; /* 16px */
   }
   
   .transaction-detail {
-    @apply flex justify-between items-center text-sm;
+    @apply flex justify-between items-center text-xs;
   }
   
   .transaction-detail-label {

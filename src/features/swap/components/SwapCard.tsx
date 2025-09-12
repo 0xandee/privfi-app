@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowUpDown, RefreshCw } from 'lucide-react';
+import { ArrowUpDown, RefreshCw, Wallet } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { TokenInput } from './TokenInput';
 import { TransactionDetails } from './TransactionDetails';
@@ -7,6 +7,7 @@ import { LoadingButton } from '@/shared/components/ui/loading-button';
 import { Token } from '@/constants/tokens';
 import { useTokenBalance } from '@/shared/hooks';
 import { ErrorMessage } from '@/shared/components/ui/error-message';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip';
 import { AVNUQuote, formatQuoteForDisplay, extractTokenPricesFromQuote } from '../services/avnu';
 import { useSwapStore } from '../store/swapStore';
 import { useTimeEstimation } from '../hooks/useTimeEstimation';
@@ -103,6 +104,10 @@ export const SwapCard: React.FC<SwapCardProps> = ({
   const { variants, transitions } = useAnimations();
   const [swapRotation, setSwapRotation] = useState(0);
 
+  // Recipient address management
+  const { privacy, setRecipientAddress } = useSwapStore();
+  const [customAddress, setCustomAddress] = useState('');
+
   // Fetch balances for selected tokens
   const fromTokenBalance = useTokenBalance(fromToken, walletAddress);
   const toTokenBalance = useTokenBalance(toToken, walletAddress);
@@ -123,7 +128,7 @@ export const SwapCard: React.FC<SwapCardProps> = ({
 
   // Get execution progress from store
   const { executionProgress } = useSwapStore();
-  
+
   // Use time estimation hook for real-time countdown
   const { formattedRemainingTime } = useTimeEstimation(executionProgress);
 
@@ -134,10 +139,39 @@ export const SwapCard: React.FC<SwapCardProps> = ({
   };
 
 
+  // Ensure customAddress always starts empty on component mount
+  React.useEffect(() => {
+    if (privacy.recipientAddress) {
+      setRecipientAddress(''); // Clear any existing recipient address from store
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
+
+  // Handle custom address change
+  const handleCustomAddressChange = (value: string) => {
+    setCustomAddress(value);
+    setRecipientAddress(value);
+  };
+
+  // Handle wallet icon click to fill connected address
+  const handleWalletIconClick = () => {
+    if (walletAddress) {
+      setCustomAddress(walletAddress);
+      setRecipientAddress(walletAddress);
+    }
+  };
+
+  // Validate Starknet address format
+  const isValidStarknetAddress = (address: string) => {
+    if (!address) return false;
+    return /^0x[a-fA-F0-9]{63,64}$/.test(address);
+  };
+
+
   return (
     <div className={transitions.default}>
       {/* Main Swap Card */}
-      <div className="crypto-card px-4 py-6">
+      <div className="crypto-card px-3 py-4">
         {/* From Token Section */}
         <TokenInput
           label="From"
@@ -148,21 +182,20 @@ export const SwapCard: React.FC<SwapCardProps> = ({
           priceData={tokenPrices}
           onAmountChange={onFromAmountChange}
           onTokenChange={onFromTokenChange}
-          showPercentageButtons={true}
+          showPercentageButtons={false}
           percentageButtons={percentageButtons}
           onPercentageClick={(percentage) => onPercentageClick(percentage, fromTokenBalance.rawFormatted)}
           disableSync={isEstimatingAfterSwap}
         />
 
         {/* Swap Direction with Separator */}
-        <div className="relative flex justify-center py-2 -mx-6 mt-4">
+        <div className="relative flex justify-center -mx-6 mt-4">
           {/* Separator line going through button */}
           <div className="absolute top-1/2 left-0 right-0 h-1 bg-[#1C1C1C] transform -translate-y-1/2"></div>
           <motion.button
             onClick={handleSwapDirection}
-            className={`w-10 h-10 bg-[#1C1C1C] text-percentage-button-foreground rounded-md hover:bg-percentage-button-hover cursor-pointer text-sm font-medium relative z-10 flex items-center justify-center ${transitions.colors} ${transitions.transform}`}
-            whileTap={!isSwappingDirection ? { scale: 0.95 } : {}}
-            animate={{ opacity: isSwappingDirection ? 0.5 : 1 }}
+            className={`w-10 h-10 bg-[#1C1C1C] text-percentage-button-foreground rounded-md hover:bg-percentage-button-hover cursor-pointer text-xs font-medium relative z-10 flex items-center justify-center ${transitions.colors} ${transitions.transform}`}
+            whileTap={!isSwappingDirection ? { scale: 0.90 } : {}}
             transition={{ duration: 0.2, ease: 'easeOut' }}
             disabled={isSwappingDirection}
           >
@@ -192,6 +225,50 @@ export const SwapCard: React.FC<SwapCardProps> = ({
         />
       </div>
 
+      {/* Recipient Section */}
+      <div className="crypto-card p-4 mt-3">
+        <div className="flex items-center gap-3 justify-between">
+          {/* Label */}
+          <span className="text-xs font-normal text-muted-foreground min-w-fit">Recipient</span>
+
+          {/* Address Input */}
+          <div className="relative">
+            <Tooltip delayDuration={200}>
+              <TooltipTrigger asChild>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={customAddress}
+                    onChange={(e) => handleCustomAddressChange(e.target.value)}
+                    className={`token-input-compact pr-8 ${customAddress && !isValidStarknetAddress(customAddress) ? 'border border-red-400/50 bg-red-400/5' : ''
+                      } ${transitions.default}`}
+                    placeholder="0x..."
+                  />
+                  <button
+                    type="button"
+                    onClick={handleWalletIconClick}
+                    disabled={!walletAddress}
+                    className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded hover:bg-gray-700/50 transition-colors ${
+                      !walletAddress ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                    }`}
+                    title={walletAddress ? 'Fill with connected wallet address' : 'No wallet connected'}
+                  >
+                    <Wallet className="h-3 w-3 text-muted-foreground" />
+                  </button>
+                </div>
+              </TooltipTrigger>
+              {customAddress && !isValidStarknetAddress(customAddress) && (
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <span className="text-xs text-red-400">
+                    Please enter a valid Starknet address (0x followed by 63-64 hex characters)
+                  </span>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </div>
+        </div>
+      </div>
+
       {/* Transaction Details */}
       {fromAmount && parseFloat(fromAmount) > 0 && isValidTokenPair && (
         <>
@@ -210,8 +287,8 @@ export const SwapCard: React.FC<SwapCardProps> = ({
               formattedQuote && selectedQuote && !quotesError
                 ? formattedQuote.exchangeRate
                 : isLoadingQuotes || isSwappingDirection
-                ? "Loading..."
-                : "Loading..."
+                  ? "Loading..."
+                  : "Loading..."
             }
             rateWithUsd={
               formattedQuote && selectedQuote && !quotesError
@@ -226,7 +303,7 @@ export const SwapCard: React.FC<SwapCardProps> = ({
             integratorFeesBps={
               selectedQuote && !quotesError
                 ? selectedQuote.integratorFeesBps
-                : 15
+                : "15"
             }
             avnuFee={
               formattedQuote && selectedQuote && !quotesError
@@ -236,13 +313,14 @@ export const SwapCard: React.FC<SwapCardProps> = ({
             avnuFeesBps={
               selectedQuote && !quotesError
                 ? selectedQuote.avnuFeesBps
-                : 0
+                : "0"
             }
             minReceived={minReceived}
             slippage={slippage}
             onSlippageChange={onSlippageChange}
             toTokenSymbol={toToken.symbol}
-            walletAddress={walletAddress}
+            toToken={toToken}
+            priceData={tokenPrices}
           />
         </>
       )}
@@ -256,14 +334,14 @@ export const SwapCard: React.FC<SwapCardProps> = ({
       )}
 
       {/* Swap Button */}
-      <div className="mt-4 space-y-3">
+      <div className="mt-3 space-y-3">
         <LoadingButton
           className="swap-button"
           onClick={onSwap}
           loading={false}
           spinnerVariant="refresh"
-          disabled={
-            !isValidTokenPair ||
+          disabled={(() => {
+            const isDisabled = !isValidTokenPair ||
             !fromAmount ||
             parseFloat(fromAmount) <= 0 ||
             isLoadingQuotes ||
@@ -273,11 +351,19 @@ export const SwapCard: React.FC<SwapCardProps> = ({
             isExecutingSwap ||
             !!executionProgress ||
             exceedsBalance ||
-            (minimumAmountValidation && !minimumAmountValidation.isValid)
-          }
+            (minimumAmountValidation && !minimumAmountValidation.isValid) ||
+            !customAddress ||
+            !isValidStarknetAddress(customAddress);
+            
+            
+            return isDisabled;
+          })()}
         >
           {(() => {
             if (!isValidTokenPair) return 'Select Different Tokens';
+            if (!walletAddress) return 'Connect Wallet';
+            if (!fromAmount || parseFloat(fromAmount) <= 0) return 'Enter Amount';
+            if (!customAddress || !isValidStarknetAddress(customAddress)) return 'Add recipient address';
             if (isLoadingQuotes) return (
               <div className="flex items-center gap-2">
                 <RefreshCw className="h-4 w-4 animate-spin" />
@@ -294,7 +380,7 @@ export const SwapCard: React.FC<SwapCardProps> = ({
                 <span>
                   {executionProgress.message}
                   {formattedRemainingTime && (
-                    <span className="text-gray-400"> ({formattedRemainingTime})</span>
+                    <span className="text-gray-400"> {formattedRemainingTime}</span>
                   )}
                 </span>
               </div>

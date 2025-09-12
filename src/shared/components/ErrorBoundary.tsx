@@ -55,7 +55,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <AlertTriangle className="h-12 w-12 text-destructive" />
             <div>
               <h2 className="text-lg font-semibold mb-2">Something went wrong</h2>
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className="text-xs text-muted-foreground mb-4">
                 An unexpected error occurred. Please try refreshing the page or contact support if the problem persists.
               </p>
               {process.env.NODE_ENV === 'development' && this.state.error && (

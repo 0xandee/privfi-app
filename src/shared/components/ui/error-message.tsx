@@ -16,7 +16,7 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
 
   return (
     <motion.div 
-      className={`flex items-center gap-2 text-sm text-red-400 mt-1 ${className}`}
+      className={`flex items-center gap-2 text-xs text-red-400 mt-1 ${className}`}
       variants={variants.shake}
       initial="initial"
       animate="animate"

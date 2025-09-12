@@ -32,7 +32,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-md">
+      <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-sm border-none bg-[#1C1C1C]">
         <DialogHeader>
           <DialogTitle>Connect Wallet</DialogTitle>
         </DialogHeader>
@@ -40,7 +40,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({
           {connectors.map((connector) => (
             <Button
               key={connector.id}
-              variant="outline"
+              variant="secondary"
               className="w-full justify-start h-12"
               onClick={() => onConnectWithConnector(connector)}
             >
@@ -53,7 +53,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({
             </Button>
           ))}
           <Button
-            variant="outline"
+            variant="secondary"
             className="w-full justify-start h-12"
             onClick={onConnectFallback}
           >

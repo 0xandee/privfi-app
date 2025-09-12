@@ -14,7 +14,7 @@ const SwapErrorFallback: React.FC<SwapErrorFallbackProps> = ({ onRetry }) => (
       <AlertTriangle className="h-10 w-10 text-destructive" />
       <div>
         <h3 className="font-semibold mb-2">Swap Error</h3>
-        <p className="text-sm text-muted-foreground mb-4">
+        <p className="text-xs text-muted-foreground mb-4">
           Unable to load swap functionality. This could be due to network issues or a temporary service outage.
         </p>
       </div>

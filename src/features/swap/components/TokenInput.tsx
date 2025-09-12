@@ -3,7 +3,7 @@ import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TokenSelector } from './TokenSelector';
 import { Token } from '@/constants/tokens';
-import { useInputValidation } from '@/shared/hooks';
+import { useInputValidation, useDebounce } from '@/shared/hooks';
 import { TokenPrice } from '@/shared/hooks/useTokenPrices';
 import { getTokenUSDDisplay } from '@/shared/utils/priceUtils';
 import { formatTokenAmountDisplay } from '@/shared/utils/lib/inputValidation';
@@ -11,6 +11,7 @@ import { ErrorMessage } from '@/shared/components/ui/error-message';
 import { WarningMessage } from '@/shared/components/ui/warning-message';
 import { useAnimations } from '@/shared/hooks/useAnimations';
 import { AnimatedNumber } from '@/shared/components/ui/animated-number';
+import { Skeleton } from '@/shared/components/ui/skeleton';
 
 interface TokenInputProps {
   label: string;
@@ -89,11 +90,13 @@ export const TokenInput: React.FC<TokenInputProps> = ({
   const price = priceFromData?.priceInUSD || 0;
   const isLoading = false;
 
+  // Debounce the validation value for USD calculation performance
+  const debouncedValue = useDebounce(validation.value, 300);
 
-  // Calculate USD value display
+  // Calculate USD value display with debounced value
   const usdValue = (() => {
-    if (!validation.value || parseFloat(validation.value) <= 0) {
-      return "~$0.00";
+    if (!debouncedValue || parseFloat(debouncedValue) <= 0) {
+      return null; // Hide when no amount
     }
     
     if (isLoading) {
@@ -101,11 +104,14 @@ export const TokenInput: React.FC<TokenInputProps> = ({
     }
     
     if (price > 0) {
-      return getTokenUSDDisplay(validation.value, price, selectedToken.decimals);
+      return getTokenUSDDisplay(debouncedValue, price, selectedToken.decimals);
     }
     
-    return "~$0.00";
+    return null; // Hide when no price available
   })();
+
+  // Show loading skeleton when user has entered amount but debounced value hasn't caught up
+  const showSkeleton = validation.value && !debouncedValue && parseFloat(validation.value) > 0;
 
   // Sync validation value with amount prop when it changes (for programmatic updates)
   useEffect(() => {
@@ -119,7 +125,7 @@ export const TokenInput: React.FC<TokenInputProps> = ({
     if (amount !== validation.value) {
       validation.setValue(amount);
     }
-  }, [amount, label, disableSync, validation.setValue]); // Include validation.setValue
+  }, [amount, label, disableSync, validation]); // Include validation object
 
   // Clear active percentage when user manually types or when token/balance changes
   useEffect(() => {
@@ -164,10 +170,27 @@ export const TokenInput: React.FC<TokenInputProps> = ({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-muted-foreground">{label}</span>
-        <span className="text-sm text-muted-foreground">
-          Balance: {isLoadingBalance ? '...' : balance} {selectedToken.symbol}
-        </span>
+        <span className="text-base font-normal text-muted-foreground">{label}</span>
+        {!readOnly ? (
+          <span 
+            className={`text-xs text-muted-foreground transition-opacity duration-200 ${
+              !isLoadingBalance && balance && parseFloat(balance) > 0 
+                ? 'cursor-pointer hover:opacity-70' 
+                : ''
+            }`}
+            onClick={() => {
+              if (!isLoadingBalance && balance && parseFloat(balance) > 0 && onPercentageClick) {
+                onPercentageClick(100);
+              }
+            }}
+          >
+            Balance: {isLoadingBalance ? '...' : balance} {selectedToken.symbol}
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground">
+            Balance: {isLoadingBalance ? '...' : balance} {selectedToken.symbol}
+          </span>
+        )}
       </div>
 
       <div className="space-y-3">
@@ -185,12 +208,27 @@ export const TokenInput: React.FC<TokenInputProps> = ({
               } ${
                 readOnly ? 'cursor-default' : ''
               } ${
-                isEstimating ? 'pr-8' : ''
+                isEstimating || usdValue || showSkeleton ? 'pr-20' : ''
               } ${transitions.default}`}
               placeholder={placeholder}
             />
+            {/* USD Value Display - Inline Right */}
+            {(usdValue || showSkeleton) && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center">
+                {showSkeleton ? (
+                  <Skeleton className="h-3 w-12" />
+                ) : (
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    {usdValue}
+                  </span>
+                )}
+              </div>
+            )}
+            {/* Loading indicator for estimating - positioned further right when USD is shown */}
             {isEstimating && (
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <div className={`absolute top-1/2 transform -translate-y-1/2 ${
+                usdValue || showSkeleton ? 'right-24' : 'right-3'
+              }`}>
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               </div>
             )}
@@ -206,12 +244,8 @@ export const TokenInput: React.FC<TokenInputProps> = ({
           <ErrorMessage message={validation.displayError} />
         )}
 
-        <div className="flex items-center justify-between">
-          <AnimatedNumber 
-            value={isLoading ? "Loading..." : usdValue}
-            className="text-sm text-muted-foreground"
-          />
-          {showPercentageButtons && !readOnly && (
+        {showPercentageButtons && !readOnly && (
+          <div className="flex justify-end">
             <div className="flex gap-2">
               {percentageButtons.map((percentage) => {
                 const isDisabled = !balance || parseFloat(balance) <= 0;
@@ -232,8 +266,8 @@ export const TokenInput: React.FC<TokenInputProps> = ({
                 );
               })}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

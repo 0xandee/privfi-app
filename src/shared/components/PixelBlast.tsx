@@ -390,10 +390,8 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
   useEffect(() => {
     const container = containerRef.current;
     if (!container) {
-      console.log('PixelBlast: No container found');
       return;
     }
-    console.log('PixelBlast: Initializing with container:', container);
     speedRef.current = speed;
     const needsReinitKeys = ['antialias', 'liquid', 'noiseAmount'];
     const cfg = { antialias, liquid, noiseAmount };
@@ -421,14 +419,11 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
       const canvas = document.createElement('canvas');
       const gl = canvas.getContext('webgl2', { antialias, alpha: true });
       if (!gl) {
-        console.error('PixelBlast: WebGL2 not supported, trying WebGL1');
         const gl1 = canvas.getContext('webgl', { antialias, alpha: true });
         if (!gl1) {
-          console.error('PixelBlast: WebGL not supported at all');
           return;
         }
       }
-      console.log('PixelBlast: WebGL context created successfully');
       const renderer = new THREE.WebGLRenderer({
         canvas,
         context: gl as WebGL2RenderingContext,
