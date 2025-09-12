@@ -2,6 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Basel Font Family */
+@font-face {
+  font-family: 'Basel';
+  src: url('./assets/fonts/Basel-Regular.woff2') format('woff2'),
+       url('./assets/fonts/Basel-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Basel';
+  src: url('./assets/fonts/Basel-Medium.woff2') format('woff2'),
+       url('./assets/fonts/Basel-Medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Basel';
+  src: url('./assets/fonts/Basel-Bold.woff2') format('woff2'),
+       url('./assets/fonts/Basel-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Crypto Swap Interface Design System */
 
 @layer base {

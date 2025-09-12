@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Build for development**: `npm run build:dev`
 - **Lint code**: `npm run lint`
 - **Preview production build**: `npm run preview`
-- **Run E2E tests**: `npx playwright test` (tests expect server on port 8084)
+- **Run E2E tests**: `npx playwright test` (tests expect server on port 8084, configure with `webServer` in playwright.config.ts)
 - **Deploy to Vercel**: `vercel --prod` (requires Vercel CLI installed)
 
 Note: This project uses Yarn 4.8.1 with PnP. All npm commands work via Yarn compatibility layer.
@@ -158,3 +158,9 @@ Each feature module exports through index files for clean API boundaries.
 - Large WASM files in `public/wasm/` for zero-knowledge proof generation
 - Files include `deposit.wasm`, `withdraw.wasm`, and `withdraw_0001.zkey` (~46MB)
 - Requires specific CORS headers: `Cross-Origin-Embedder-Policy: require-corp` and `Cross-Origin-Opener-Policy: same-origin`
+
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
