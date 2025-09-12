@@ -20,6 +20,7 @@
 - **Responsive Design** - Mobile-first approach with beautiful animations
 - **Dark/Light Themes** - Comprehensive theming with `next-themes`
 - **Intuitive UX** - Clean, crypto-focused interface with custom CSS classes
+- **Educational Pages** - Comprehensive How It Works guide and project Roadmap
 
 ## 🚀 Technology Stack
 
@@ -71,7 +72,12 @@ src/
 │   ├── api/          # Base API configuration
 │   ├── config/       # App configuration
 │   └── providers/    # Core React providers
+├── components/       # Shared layout components (Layout.tsx)
 └── pages/            # Route-based page components
+    ├── Index.tsx     # Main swap interface page  
+    ├── HowItWorks.tsx # Educational guide explaining swap flows
+    ├── Roadmap.tsx   # Project roadmap and upcoming features
+    └── NotFound.tsx  # 404 error page
 ```
 
 ## 🛠️ Development Setup
@@ -150,6 +156,12 @@ vercel --prod       # Deploy to Vercel (requires Vercel CLI)
 - Feature-specific error boundaries prevent app-wide crashes
 - Modular component architecture with clean separation
 - Custom CSS classes for crypto-specific styling
+- Consistent navigation layout with responsive header design
+
+### Page Structure
+- **Main Swap Page** (`/`) - Primary swap interface with wallet connectivity
+- **How It Works** (`/how-it-works`) - Detailed explanation of regular vs private swap flows
+- **Roadmap** (`/roadmap`) - Project development roadmap and upcoming features
 
 ## 🚀 Deployment
 
