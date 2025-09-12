@@ -23,11 +23,11 @@ export const WalletConnectionButton: React.FC<WalletConnectionButtonProps> = ({
 
   return (
     <Button
-      variant={isConnected ? "secondary" : "default"}
+      variant={isConnected ? "ghost" : "default"}
       size="sm"
       onClick={isConnected ? onDisconnect : onConnect}
       disabled={isConnecting}
-      className="flex items-center gap-2 group w-40"
+      className="flex items-center gap-2 group w-36"
     >
       {isConnected && !isConnecting ? (
         <>
