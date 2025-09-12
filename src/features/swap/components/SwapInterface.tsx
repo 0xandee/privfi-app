@@ -1,5 +1,3 @@
-import { useState } from 'react';
-import { Button } from '@/shared/components/ui/button';
 import { useWalletConnection } from '@/features/wallet/hooks';
 import { useSwapForm } from '../hooks';
 import { WalletConnectionButton, WalletModal } from '@/features/wallet/components';
@@ -7,73 +5,43 @@ import { SwapCard } from './SwapCard';
 import { SwapErrorBoundary } from './SwapErrorBoundary';
 
 const SwapInterface = () => {
-  const [activeNav, setActiveNav] = useState('swap');
   const walletConnection = useWalletConnection();
   const swapForm = useSwapForm(walletConnection.address);
 
-
-
   return (
-    <div className="min-h-screen bg-transparent flex flex-col">
-      {/* Top Header with Logo */}
-      <div className="p-8 absolute top-0 left-0">
-        <img src="/PrivFi.svg" alt="PrivFi" className="h-6 w-auto" />
-      </div>
-
-      {/* Navigation Links */}
-      <div className="p-8 absolute top-0 right-0 z-10">
-        <nav className="flex items-center gap-4">
-          <Button
-            variant="link"
-            className={`text-sm font-medium transition-colors hover:text-white ${activeNav === 'swap' ? 'text-white' : 'text-gray-400'}`}
-            onClick={() => setActiveNav('swap')}
-          >
-            Swap
-          </Button>
-          <Button
-            variant="link"
-            className={`text-sm font-medium transition-colors hover:text-white ${activeNav === 'docs' ? 'text-white' : 'text-gray-400'}`}
-            onClick={() => setActiveNav('docs')}
-          >
-            How it works
-          </Button>
-        </nav>
-      </div>
-
-      {/* Main Content Centered */}
-      <div className="flex-1 flex items-center justify-center p-4 flex-col">
-        <div className="w-full max-w-md rounded-xl pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-base font-normal text-white pl-2">Private Swap</span>
-            </div>
-            <div className="flex items-center">
-              <WalletConnectionButton
-                isConnected={walletConnection.isConnected}
-                isConnecting={walletConnection.isConnecting}
-                address={walletConnection.address}
-                onConnect={() => walletConnection.setShowWalletModal(true)}
-                onDisconnect={walletConnection.handleDisconnect}
-              />
-              <WalletModal
-                isOpen={walletConnection.showWalletModal}
-                onOpenChange={walletConnection.setShowWalletModal}
-                connectors={walletConnection.connectors}
-                onConnectWithConnector={walletConnection.handleConnectWithConnector}
-                onConnectFallback={walletConnection.handleConnectFallback}
-              />
-            </div>
+    <div className="flex-1 flex items-center justify-center p-4 flex-col">
+      <div className="w-full max-w-md rounded-xl pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-base font-normal text-white pl-2">Private Swap</span>
+          </div>
+          <div className="flex items-center">
+            <WalletConnectionButton
+              isConnected={walletConnection.isConnected}
+              isConnecting={walletConnection.isConnecting}
+              address={walletConnection.address}
+              onConnect={() => walletConnection.setShowWalletModal(true)}
+              onDisconnect={walletConnection.handleDisconnect}
+            />
+            <WalletModal
+              isOpen={walletConnection.showWalletModal}
+              onOpenChange={walletConnection.setShowWalletModal}
+              connectors={walletConnection.connectors}
+              onConnectWithConnector={walletConnection.handleConnectWithConnector}
+              onConnectFallback={walletConnection.handleConnectFallback}
+            />
           </div>
         </div>
-        <div className="w-full max-w-md bg-[#1C1C1C] rounded-xl p-3">
-          {/* Error Display */}
-          {/* {walletConnection.connectError && (
-          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 mb-4">
-            <p className="text-xs text-destructive">{walletConnection.connectError.message}</p>
-          </div>
-        )} */}
+      </div>
+      <div className="w-full max-w-md bg-[#1C1C1C] rounded-xl p-3">
+        {/* Error Display */}
+        {/* {walletConnection.connectError && (
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 mb-4">
+          <p className="text-xs text-destructive">{walletConnection.connectError.message}</p>
+        </div>
+      )} */}
 
-          {/* Main Swap Card */}
+        {/* Main Swap Card */}
           <SwapErrorBoundary>
             <SwapCard
               fromAmount={swapForm.fromAmount}
@@ -117,16 +85,12 @@ const SwapInterface = () => {
               minimumAmountValidation={swapForm.minimumAmountValidation}
             />
           </SwapErrorBoundary>
-        </div>
-        {/* Transaction Processing Warning */}
-        {(
-          <div className="flex flex-col items-center justify-center gap-2 text-xs px-24 py-3 sm:p-4">
-            <span className="text-muted-foreground opacity-50 text-center">Do not refresh or close this page while transaction is processing</span>
-            <span className="text-muted-foreground opacity-50 text-center">Powered by Typhoon and AVNU</span>
-          </div>
-        )}
       </div>
-
+      {/* Transaction Processing Warning */}
+      <div className="flex flex-col items-center justify-center gap-2 text-xs px-24 py-3 sm:p-4">
+        <span className="text-muted-foreground opacity-50 text-center">Do not refresh or close this page while transaction is processing</span>
+        <span className="text-muted-foreground opacity-50 text-center">Powered by Typhoon and AVNU</span>
+      </div>
     </div>
   );
 };
