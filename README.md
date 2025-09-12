@@ -200,6 +200,10 @@ The application is deployed on **Vercel** with:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## 🏗️ Attribution
+
+This frontend was forked from https://www.train.tech/ and adapted for private cryptocurrency swapping functionality.
+
 ## 🔗 Links
 
 - **Live App**: https://privfi-app.vercel.app
