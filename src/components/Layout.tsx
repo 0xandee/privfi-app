@@ -36,6 +36,18 @@ const Layout = () => {
               </Button>
             )}
           </NavLink>
+          <NavLink to="/roadmap">
+            {({ isActive }) => (
+              <Button
+                variant="link"
+                className={`text-sm font-medium transition-colors hover:text-white ${
+                  isActive ? 'text-white' : 'text-gray-400'
+                }`}
+              >
+                Roadmap
+              </Button>
+            )}
+          </NavLink>
         </nav>
       </div>
 

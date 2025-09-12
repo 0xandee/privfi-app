@@ -7,6 +7,7 @@ import { StarknetProvider } from "@/core/providers";
 import Layout from "./components/Layout";
 import Index from "./pages/Index";
 import HowItWorks from "./pages/HowItWorks";
+import Roadmap from "./pages/Roadmap";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
             <Route path="/" element={<Layout />}>
               <Route index element={<Index />} />
               <Route path="how-it-works" element={<HowItWorks />} />
+              <Route path="roadmap" element={<Roadmap />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
