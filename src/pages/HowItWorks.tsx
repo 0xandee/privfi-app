@@ -1,7 +1,18 @@
+import privfiFlowImage from "@/assets/privfi-flow.png";
+import { ImageWithLightbox } from "@/shared/components/ImageWithLightbox";
+
 const HowItWorks = () => {
   return (
     <div className="flex-1 flex items-center justify-center my-40">
       <div className="w-1/2 max-w-4xl text-white font-mono leading-relaxed px-8">
+        <div className="mb-16 flex justify-center">
+          <ImageWithLightbox
+            src={privfiFlowImage}
+            alt="Privfi Flow Diagram - Public to Private Transaction Process"
+            className="max-w-full h-auto rounded-lg border border-gray-700/50"
+          />
+        </div>
+
         <p className="mb-16 text-gray-200">
           Let's walk through how PrivFi works end-to-end when Alice wants to privately swap <code className="bg-gray-800/50 px-1 py-0.5 rounded text-gray-100">1 ETH</code> for <code className="bg-gray-800/50 px-1 py-0.5 rounded text-gray-100">USDC</code> on <code className="bg-gray-800/50 px-1 py-0.5 rounded text-gray-100">Starknet</code>.
         </p>
