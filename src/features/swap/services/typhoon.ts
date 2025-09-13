@@ -2,13 +2,13 @@ import { TyphoonSDK } from 'typhoon-sdk';
 import { BaseDEXService } from './baseDEX';
 import { Token, SwapQuote } from '@/shared/types';
 import { QuoteRequest, QuoteResponse, ExecuteSwapRequest, ExecuteSwapResponse } from '../types';
-import { 
-  TyphoonPrivateSwapRequest, 
-  TyphoonPrivateSwapResponse, 
+import {
+  TyphoonPrivateSwapRequest,
+  TyphoonPrivateSwapResponse,
   TyphoonWithdrawRequest,
   TyphoonDepositCall
 } from '../types/typhoon';
-import { 
+import {
   loadTyphoonDepositData,
   saveTyphoonDepositData,
   clearTyphoonDepositData,
@@ -92,28 +92,28 @@ export class TyphoonService extends BaseDEXService {
   getTokenMinimalAmount(tokenAddress: string): string {
     // Normalize token address for comparison
     const normalizedAddress = tokenAddress.toLowerCase();
-    
+
     // Check against known token addresses from constants
     // ETH: 0.001 ETH minimum
     if (normalizedAddress === '0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7') {
       return '0.001';
     }
-    
+
     // STRK: 10 STRK minimum
     if (normalizedAddress === '0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d') {
       return '10';
     }
-    
+
     // USDC: 1 USDC minimum
     if (normalizedAddress === '0x053c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8') {
       return '1';
     }
-    
+
     // WBTC: 0.00005 WBTC minimum (approximately $2-3 equivalent)
     if (normalizedAddress === '0x03fe2b97c1fd336e750087d68b9b867997fd64a2661ff3ca5a7c771641e8e7ac') {
       return '0.00005';
     }
-    
+
     // Default minimum for unknown tokens (equivalent to ~$1)
     return '0.001';
   }
@@ -129,24 +129,24 @@ export class TyphoonService extends BaseDEXService {
     transactionHash?: string
   ): Promise<TyphoonDepositCall[]> {
     try {
-      
+
       // Ensure SDK is initialized
       await this.initializeSDK('deposit');
-      
+
       // Convert string amount to BigInt
       const amountBigInt = BigInt(amountOut);
-      
+
       const depositCalls = await this.sdk.generate_approve_and_deposit_calls(
         amountBigInt,
         tokenOutAddr
       );
-      
+
       // CRITICAL: Save SDK data after generation (as per Typhoon docs)
       try {
         const secrets = this.sdk.get_secrets();
         const nullifiers = this.sdk.get_nullifiers();
         const pools = this.sdk.get_pools();
-        
+
         // Save data if we have transaction hash and wallet address
         if (transactionHash && walletAddress && (secrets?.length || nullifiers?.length || pools?.length)) {
           const depositData: TyphoonDepositData = {
@@ -159,7 +159,7 @@ export class TyphoonService extends BaseDEXService {
             timestamp: Date.now(),
             walletAddress
           };
-          
+
           saveTyphoonDepositData(depositData);
         } else if (secrets?.length || nullifiers?.length || pools?.length) {
           // Store temporarily if we don't have transaction hash yet
@@ -171,20 +171,20 @@ export class TyphoonService extends BaseDEXService {
             amount: amountOut
           };
         }
-        
+
       } catch (sdkDataError) {
         // Failed to extract SDK data (non-critical)
       }
-      
+
       return depositCalls;
     } catch (error) {
-      
+
       // Check if this is an RPC-related error
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (errorMessage.includes('500') || errorMessage.includes('Internal error') || errorMessage.includes('RPC')) {
         throw new Error('Typhoon service is temporarily unavailable due to RPC issues. Please try again later or use regular swap mode.');
       }
-      
+
       throw new Error(`Typhoon deposit call generation failed: ${errorMessage}`);
     }
   }
@@ -205,7 +205,7 @@ export class TyphoonService extends BaseDEXService {
       if (!this.tempSdkData) {
         return;
       }
-      
+
       const depositData: TyphoonDepositData = {
         transactionHash,
         secrets: this.tempSdkData.secrets,
@@ -216,9 +216,9 @@ export class TyphoonService extends BaseDEXService {
         timestamp: Date.now(),
         walletAddress
       };
-      
+
       saveTyphoonDepositData(depositData);
-      
+
       // Clear temporary data after saving
       this.tempSdkData = null;
     } catch (error) {
@@ -253,14 +253,14 @@ export class TyphoonService extends BaseDEXService {
     try {
       // Initialize SDK for withdrawal with empty state first
       await this.initializeSDK('withdrawal');
-      
+
       // CRITICAL: Load specific deposit data for this transaction
       const depositData = loadTyphoonDepositData(withdrawRequest.transactionHash);
-      
+
       if (!depositData) {
         throw new Error(`No deposit data found for transaction ${withdrawRequest.transactionHash}. Cannot withdraw without original deposit secrets.`);
       }
-      
+
       // Validate deposit data quality and consistency
       if (!depositData.secrets || !Array.isArray(depositData.secrets)) {
         throw new Error('Invalid deposit data: secrets must be a valid array');
@@ -271,19 +271,19 @@ export class TyphoonService extends BaseDEXService {
       if (!depositData.pools || !Array.isArray(depositData.pools)) {
         throw new Error('Invalid deposit data: pools must be a valid array');
       }
-      
+
       // Re-initialize SDK with the specific deposit data
       this.isInitialized = false; // Force re-initialization
       this.initializationPromise = null;
-      
+
       try {
         // Properly re-initialize the SDK with the deposit data
         this.sdk.init(depositData.secrets, depositData.nullifiers, depositData.pools);
         this.isInitialized = true;
-        
+
         // Add a small delay to ensure SDK is fully ready
         await new Promise(resolve => setTimeout(resolve, 100));
-        
+
         // Verify SDK state after initialization
         try {
           // Test if SDK is properly initialized by checking if withdraw method exists and is callable
@@ -294,28 +294,33 @@ export class TyphoonService extends BaseDEXService {
           this.isInitialized = false;
           throw new Error(`SDK initialization failed verification: ${verifyError.message}`);
         }
-        
+
       } catch (initError) {
         this.isInitialized = false;
         this.initializationPromise = null;
         throw new Error(`Failed to re-initialize SDK with deposit data: ${initError.message}`);
       }
-      
+
       // Ensure we're passing the correct format for the SDK
       // The SDK needs the transaction hash WITH the 0x prefix for BigInt conversion
-      const formattedTxHash = withdrawRequest.transactionHash.startsWith('0x') 
-        ? withdrawRequest.transactionHash 
+      const formattedTxHash = withdrawRequest.transactionHash.startsWith('0x')
+        ? withdrawRequest.transactionHash
         : `0x${withdrawRequest.transactionHash}`;
-      
+
+      const withdrawCalldata = await this.sdk.get_withdraw_calldata(
+        formattedTxHash,
+        withdrawRequest.recipientAddresses
+      );
+
       const result = await this.sdk.withdraw(
         formattedTxHash,
         withdrawRequest.recipientAddresses
       );
-      
+
       // Clean up stored data after successful withdrawal
       clearAllTyphoonData();
     } catch (error) {
-      
+
       throw new Error(`Withdrawal failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
