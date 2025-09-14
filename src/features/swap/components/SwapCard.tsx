@@ -182,7 +182,7 @@ export const SwapCard: React.FC<SwapCardProps> = ({
           priceData={tokenPrices}
           onAmountChange={onFromAmountChange}
           onTokenChange={onFromTokenChange}
-          showPercentageButtons={false}
+          showPercentageButtons={true}
           percentageButtons={percentageButtons}
           onPercentageClick={(percentage) => onPercentageClick(percentage, fromTokenBalance.rawFormatted)}
           disableSync={isEstimatingAfterSwap}
@@ -242,7 +242,7 @@ export const SwapCard: React.FC<SwapCardProps> = ({
                     onChange={(e) => handleCustomAddressChange(e.target.value)}
                     className={`token-input-compact ${customAddress && !isValidStarknetAddress(customAddress) ? 'border border-red-400/50 bg-red-400/5' : ''
                       } ${transitions.default}`}
-                    placeholder="(Optional) Different Recipient Address"
+                    placeholder="Recipient address (optional)"
                   />
                   {/* <button
                     type="button"
