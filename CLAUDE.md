@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Build for development**: `npm run build:dev`
 - **Lint code**: `npm run lint`
 - **Preview production build**: `npm run preview`
-- **Run E2E tests**: `npx playwright test` (tests expect server on port 8084, configure with `webServer` in playwright.config.ts)
+- **Run E2E tests**: `npx playwright test` (tests expect server on port 8084, automatically starts dev server via `webServer` config)
 - **Deploy to Vercel**: `vercel --prod` (requires Vercel CLI installed)
 
 Note: This project uses Yarn 4.8.1 with PnP. All npm commands work via Yarn compatibility layer.
