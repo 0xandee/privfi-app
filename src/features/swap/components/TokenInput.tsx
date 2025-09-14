@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { TokenSelector } from './TokenSelector';
 import { Token } from '@/constants/tokens';
 import { useInputValidation, useDebounce } from '@/shared/hooks';
@@ -12,6 +11,7 @@ import { WarningMessage } from '@/shared/components/ui/warning-message';
 import { useAnimations } from '@/shared/hooks/useAnimations';
 import { AnimatedNumber } from '@/shared/components/ui/animated-number';
 import { Skeleton } from '@/shared/components/ui/skeleton';
+import { Button } from '@/shared/components/ui/button';
 
 interface TokenInputProps {
   label: string;
@@ -180,6 +180,7 @@ export const TokenInput: React.FC<TokenInputProps> = ({
             }`}
             onClick={() => {
               if (!isLoadingBalance && balance && parseFloat(balance) > 0 && onPercentageClick) {
+                setActivePercentage(100);
                 onPercentageClick(100);
               }
             }}
@@ -244,25 +245,24 @@ export const TokenInput: React.FC<TokenInputProps> = ({
           <ErrorMessage message={validation.displayError} />
         )}
 
-        {showPercentageButtons && !readOnly && (
-          <div className="flex justify-end">
-            <div className="flex gap-2">
+        {false && showPercentageButtons && !readOnly && (
+          <div className="flex ">
+            <div className="flex gap-2 w-full justify-between">
               {percentageButtons.map((percentage) => {
                 const isDisabled = !balance || parseFloat(balance) <= 0;
                 return (
-                  <motion.button
+                  <Button
                     key={percentage}
                     onClick={() => handlePercentageClick(percentage)}
-                    className={`percentage-button ${
-                      activePercentage === percentage ? 'bg-white text-black hover:bg-white' : ''
-                    } ${transitions.default}`}
-                    animate={{ opacity: isDisabled ? 0.5 : 1 }}
-                    transition={{ duration: 0.2, ease: 'easeOut' }}
+                    variant="outline"
+                    size="sm"
+                    className={`w-full bg-[#262626] text-muted-foreground border-muted-foreground ${
+                      activePercentage === percentage ? 'bg-primary text-primary-foreground' : ''
+                    }`}
                     disabled={isDisabled}
-                    style={{ cursor: isDisabled ? 'not-allowed' : 'pointer' }}
                   >
                     {percentage}%
-                  </motion.button>
+                  </Button>
                 );
               })}
             </div>
