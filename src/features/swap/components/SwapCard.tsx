@@ -226,13 +226,13 @@ export const SwapCard: React.FC<SwapCardProps> = ({
       </div>
 
       {/* Recipient Section */}
-      <div className="crypto-card p-4 mt-3">
-        <div className="flex items-center gap-3 justify-between">
+      <div className="crypto-card p-3 mt-3">
+        <div className="flex items-center gap-3">
           {/* Label */}
-          <span className="text-xs font-normal text-muted-foreground min-w-fit">Recipient</span>
+          {/* <span className="text-xs font-normal text-muted-foreground min-w-fit">Recipient</span> */}
 
           {/* Address Input */}
-          <div className="relative">
+          <div className="relative w-full">
             <Tooltip delayDuration={200}>
               <TooltipTrigger asChild>
                 <div className="relative">
@@ -240,11 +240,11 @@ export const SwapCard: React.FC<SwapCardProps> = ({
                     type="text"
                     value={customAddress}
                     onChange={(e) => handleCustomAddressChange(e.target.value)}
-                    className={`token-input-compact pr-8 ${customAddress && !isValidStarknetAddress(customAddress) ? 'border border-red-400/50 bg-red-400/5' : ''
+                    className={`token-input-compact ${customAddress && !isValidStarknetAddress(customAddress) ? 'border border-red-400/50 bg-red-400/5' : ''
                       } ${transitions.default}`}
-                    placeholder="0x..."
+                    placeholder="(Optional) Different Recipient Address"
                   />
-                  <button
+                  {/* <button
                     type="button"
                     onClick={handleWalletIconClick}
                     disabled={!walletAddress}
@@ -254,7 +254,7 @@ export const SwapCard: React.FC<SwapCardProps> = ({
                     title={walletAddress ? 'Fill with connected wallet address' : 'No wallet connected'}
                   >
                     <Wallet className="h-3 w-3 text-muted-foreground" />
-                  </button>
+                  </button> */}
                 </div>
               </TooltipTrigger>
               {customAddress && !isValidStarknetAddress(customAddress) && (
@@ -342,20 +342,19 @@ export const SwapCard: React.FC<SwapCardProps> = ({
           spinnerVariant="refresh"
           disabled={(() => {
             const isDisabled = !isValidTokenPair ||
-            !fromAmount ||
-            parseFloat(fromAmount) <= 0 ||
-            isLoadingQuotes ||
-            (fromAmount && parseFloat(fromAmount) > 0 && isValidTokenPair && !selectedQuote && !isLoadingQuotes) ||
-            isQuoteExpired ||
-            (quotesError && fromAmount && parseFloat(fromAmount) > 0) ||
-            isExecutingSwap ||
-            !!executionProgress ||
-            exceedsBalance ||
-            (minimumAmountValidation && !minimumAmountValidation.isValid) ||
-            !customAddress ||
-            !isValidStarknetAddress(customAddress);
-            
-            
+              !fromAmount ||
+              parseFloat(fromAmount) <= 0 ||
+              isLoadingQuotes ||
+              (fromAmount && parseFloat(fromAmount) > 0 && isValidTokenPair && !selectedQuote && !isLoadingQuotes) ||
+              isQuoteExpired ||
+              (quotesError && fromAmount && parseFloat(fromAmount) > 0) ||
+              isExecutingSwap ||
+              !!executionProgress ||
+              exceedsBalance ||
+              (minimumAmountValidation && !minimumAmountValidation.isValid) ||
+              (customAddress && !isValidStarknetAddress(customAddress));
+
+
             return isDisabled;
           })()}
         >
@@ -363,7 +362,7 @@ export const SwapCard: React.FC<SwapCardProps> = ({
             if (!isValidTokenPair) return 'Select Different Tokens';
             if (!walletAddress) return 'Connect Wallet';
             if (!fromAmount || parseFloat(fromAmount) <= 0) return 'Enter Amount';
-            if (!customAddress || !isValidStarknetAddress(customAddress)) return 'Add recipient address';
+            if (customAddress && !isValidStarknetAddress(customAddress)) return 'Invalid recipient address';
             if (isLoadingQuotes) return (
               <div className="flex items-center gap-2">
                 <RefreshCw className="h-4 w-4 animate-spin" />

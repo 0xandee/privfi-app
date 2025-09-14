@@ -195,7 +195,7 @@
   }
   
   .token-input-compact {
-    @apply text-sm font-normal placeholder:text-muted-foreground border-none outline-none w-full px-2 py-1.5 rounded-lg transition-colors;
+    @apply text-sm font-normal placeholder:text-muted-foreground border-none outline-none w-full px-3 py-3 rounded-lg transition-colors;
     background-color: #1C1C1C;
   }
   
