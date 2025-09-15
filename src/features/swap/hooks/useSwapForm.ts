@@ -57,8 +57,8 @@ export const useSwapForm = (walletAddress?: string) => {
 
   // Minimum amount validation for private swaps
   const minimumAmountValidation = useMinimumAmountValidation({
-    outputToken: toToken,
-    outputAmount: toAmount,
+    inputToken: fromToken,
+    inputAmount: fromAmount,
   });
 
   // Get a suitable alternative token when same token is selected

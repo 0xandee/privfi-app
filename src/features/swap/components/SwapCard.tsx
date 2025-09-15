@@ -370,7 +370,7 @@ export const SwapCard: React.FC<SwapCardProps> = ({
               </div>
             );
             if (exceedsBalance) return `Insufficient ${fromToken.symbol} Balance`;
-            if (minimumAmountValidation && !minimumAmountValidation.isValid) return `Minimum output ${minimumAmountValidation.minimumAmount} ${toToken.symbol} required`;
+            if (minimumAmountValidation && !minimumAmountValidation.isValid) return `Minimum input ${minimumAmountValidation.minimumAmount} ${fromToken.symbol} required`;
             if (isQuoteExpired) return 'Quote Expired - Refresh';
             if (quotesError && fromAmount && parseFloat(fromAmount) > 0) return 'Quote Error';
             if (executionProgress) return (

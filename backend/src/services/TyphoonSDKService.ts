@@ -105,8 +105,7 @@ export class TyphoonSDKService {
         pools: freshSDK.get_pools()
       });
 
-      let workingAmount = amount;
-      let amountBigInt = BigInt(amount);
+      const amountBigInt = BigInt(amount);
       this.logger.info('SDK Debug - Amount conversion', {
         originalAmount: amount,
         bigIntAmount: amountBigInt.toString(),
@@ -134,109 +133,12 @@ export class TyphoonSDKService {
         amountInETH: (Number(amountBigInt) / Math.pow(10, 18)).toString()
       });
 
-      // Try with a smaller test amount first to see if amount is the issue
-      const testAmount = BigInt(10) * BigInt(Math.pow(10, 18)); // 10 STRK
-      this.logger.info('SDK Debug - Testing with smaller amount first', {
-        testAmount: testAmount.toString(),
-        testAmountInTokens: (Number(testAmount) / Math.pow(10, 18)).toString()
-      });
-
       try {
-        this.logger.info('SDK Debug - Testing with 10 STRK amount...');
-        const testCalls = await freshSDK.generate_approve_and_deposit_calls(
-          testAmount,
-          tokenAddress
-        );
-        this.logger.info('SDK Debug - Test amount result', {
-          testCallsLength: testCalls?.length || 0,
-          testCalls
-        });
-      } catch (testError) {
-        this.logger.error('SDK Debug - Test amount failed', { testError });
-      }
-
-      // Try with ETH token to see if it's token-specific
-      const ethTokenAddress = '0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7';
-      const ethAmount = BigInt(Math.pow(10, 17)); // 0.1 ETH
-      try {
-        this.logger.info('SDK Debug - Testing with ETH token...', {
-          ethTokenAddress,
-          ethAmount: ethAmount.toString()
-        });
-        const ethCalls = await freshSDK.generate_approve_and_deposit_calls(
-          ethAmount,
-          ethTokenAddress
-        );
-        this.logger.info('SDK Debug - ETH token result', {
-          ethCallsLength: ethCalls?.length || 0,
-          ethCalls
-        });
-      } catch (ethError) {
-        this.logger.error('SDK Debug - ETH token failed', { ethError });
-      }
-
-      try {
-        this.logger.info('SDK Debug - Calling generate_approve_and_deposit_calls...');
-
-        // Test network connectivity to SDK's hardcoded RPC
-        try {
-          const response = await fetch('https://rpc.starknet.lava.build:443', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              jsonrpc: '2.0',
-              method: 'starknet_chainId',
-              params: [],
-              id: 1
-            })
-          });
-          const networkData = await response.json();
-          this.logger.info('SDK Debug - Network connectivity test', {
-            status: response.status,
-            networkData
-          });
-        } catch (networkError) {
-          this.logger.warn('SDK Debug - Network connectivity failed', { networkError });
-        }
-
-        // Use a working amount if the original amount fails
-        let depositCalls = await freshSDK.generate_approve_and_deposit_calls(
+        // Generate deposit calls with the exact user amount
+        const depositCalls = await freshSDK.generate_approve_and_deposit_calls(
           amountBigInt,
           tokenAddress
         );
-
-        // If original amount returns empty, try with 10 tokens (known working amount)
-        if (!depositCalls || depositCalls.length === 0) {
-          this.logger.warn('SDK Debug - Original amount failed, trying with 10 tokens...', {
-            originalAmount: amountBigInt.toString(),
-            fallbackAmount: testAmount.toString()
-          });
-
-          // Create new SDK instance for fallback
-          const fallbackSDK = new TyphoonSDK();
-          depositCalls = await fallbackSDK.generate_approve_and_deposit_calls(
-            testAmount,
-            tokenAddress
-          );
-
-          if (depositCalls && depositCalls.length > 0) {
-            this.logger.info('SDK Debug - Fallback amount worked!', {
-              fallbackCalls: depositCalls.length,
-              fallbackAmount: testAmount.toString()
-            });
-
-            // Use the fallback SDK for getting state
-            freshSDK = fallbackSDK;
-
-            // Update amount to the working amount for storage
-            workingAmount = testAmount.toString();
-            amountBigInt = testAmount;
-
-            this.logger.info('Updated to working fallback amount', {
-              newAmount: workingAmount
-            });
-          }
-        }
 
         this.logger.info('SDK Debug - Method completed', {
           returnedType: typeof depositCalls,
@@ -268,7 +170,7 @@ export class TyphoonSDKService {
           txHash: tempDepositId, // Temporary ID until user transaction completes
           userAddress,
           tokenAddress,
-          amount: workingAmount,
+          amount: amount,
           timestamp: Date.now(),
           status: 'pending',
           typhoonData: {
@@ -284,7 +186,7 @@ export class TyphoonSDKService {
         this.logger.info('Generated user deposit calls', {
           userAddress,
           tokenAddress,
-          amount: workingAmount,
+          amount: amount,
           tempDepositId
         });
 

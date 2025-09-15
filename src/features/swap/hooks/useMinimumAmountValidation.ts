@@ -11,17 +11,17 @@ interface MinimumAmountValidation {
 }
 
 interface UseMinimumAmountValidationProps {
-  outputToken: Token;
-  outputAmount: string;
+  inputToken: Token;
+  inputAmount: string;
   isPrivacyMode?: boolean; // Optional override for privacy mode
 }
 
 /**
- * Hook to validate if the output amount meets Typhoon's minimum requirements for private swaps
+ * Hook to validate if the input amount meets Typhoon's minimum requirements for private swaps
  */
 export const useMinimumAmountValidation = ({
-  outputToken,
-  outputAmount,
+  inputToken,
+  inputAmount,
   isPrivacyMode,
 }: UseMinimumAmountValidationProps): MinimumAmountValidation => {
   // Get privacy configuration from store if not explicitly provided
@@ -37,8 +37,8 @@ export const useMinimumAmountValidation = ({
       };
     }
 
-    // If no output amount, validation passes (handled elsewhere)
-    if (!outputAmount || parseFloat(outputAmount) <= 0) {
+    // If no input amount, validation passes (handled elsewhere)
+    if (!inputAmount || parseFloat(inputAmount) <= 0) {
       return {
         isValid: true,
         minimumAmount: '0',
@@ -48,19 +48,19 @@ export const useMinimumAmountValidation = ({
     try {
       // Create Typhoon service instance to get minimum amount
       const typhoonService = new TyphoonService();
-      const minimumAmount = typhoonService.getTokenMinimalAmount(outputToken.address);
+      const minimumAmount = typhoonService.getTokenMinimalAmount(inputToken.address);
 
-      const outputAmountNum = parseFloat(outputAmount);
+      const inputAmountNum = parseFloat(inputAmount);
       const minimumAmountNum = parseFloat(minimumAmount);
 
-      const isValid = outputAmountNum >= minimumAmountNum;
+      const isValid = inputAmountNum >= minimumAmountNum;
 
       if (!isValid) {
         return {
           isValid: false,
           minimumAmount,
-          errorMessage: `Minimum ${minimumAmount} ${outputToken.symbol} required for private swaps`,
-          warningMessage: `Private swaps require a minimum of ${minimumAmount} ${outputToken.symbol}. Current output: ${outputAmount} ${outputToken.symbol}`,
+          errorMessage: `Minimum ${minimumAmount} ${inputToken.symbol} required for private swaps`,
+          warningMessage: `Private swaps require a minimum of ${minimumAmount} ${inputToken.symbol}. Current input: ${inputAmount} ${inputToken.symbol}`,
         };
       }
 
@@ -76,5 +76,5 @@ export const useMinimumAmountValidation = ({
         minimumAmount: '0',
       };
     }
-  }, [outputToken.address, outputToken.symbol, outputAmount, privacyEnabled]);
+  }, [inputToken.address, inputToken.symbol, inputAmount, privacyEnabled]);
 };
