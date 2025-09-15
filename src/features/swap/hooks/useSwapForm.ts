@@ -4,14 +4,17 @@ import { Token } from '@/shared/types';
 import { STARKNET_TOKENS, POPULAR_PAIRS, DEFAULT_TOKENS } from '@/constants/tokens';
 import { useSwapQuotes, useSwapEstimation } from './useSwapQuotes';
 import { useSwapExecution } from './useSwapExecution';
+import { usePrivacySwapExecution } from './usePrivacySwapExecution';
 import { useSwapStore } from '../store/swapStore';
+import { usePrivacyStore } from '@/features/privacy/store/privacyStore';
 import { formatTokenAmountDisplay } from '@/shared/utils/lib/inputValidation';
 import { useMinimumAmountValidation } from './useMinimumAmountValidation';
 
 export const useSwapForm = (walletAddress?: string) => {
-  // Get privacy config from store
+  // Get privacy config from stores
   const { privacy } = useSwapStore();
-  
+  const { isPrivacyModeEnabled } = usePrivacyStore();
+
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
   const [fromToken, setFromToken] = useState<Token>(STARKNET_TOKENS.ETH);
@@ -38,8 +41,15 @@ export const useSwapForm = (walletAddress?: string) => {
     walletAddress,
   });
 
-  // Swap execution hook with privacy configuration
+  // Regular swap execution hook
   const swapExecution = useSwapExecution({
+    selectedQuote: swapQuotes.selectedQuote,
+    slippage,
+    recipientAddress: privacy.recipientAddress || undefined,
+  });
+
+  // Privacy swap execution hook
+  const privacySwapExecution = usePrivacySwapExecution({
     selectedQuote: swapQuotes.selectedQuote,
     slippage,
     recipientAddress: privacy.recipientAddress || undefined,
@@ -252,9 +262,13 @@ export const useSwapForm = (walletAddress?: string) => {
       return;
     }
 
-    // Execute the swap using the swap execution hook
-    swapExecution.executeSwap();
-  }, [isValidTokenPair, swapQuotes, swapExecution]);
+    // Use privacy swap if privacy mode is enabled, otherwise use regular swap
+    if (isPrivacyModeEnabled) {
+      privacySwapExecution.executePrivacySwap();
+    } else {
+      swapExecution.executeSwap();
+    }
+  }, [isValidTokenPair, swapQuotes, swapExecution, isPrivacyModeEnabled, privacySwapExecution]);
 
   return {
     // State
@@ -279,8 +293,8 @@ export const useSwapForm = (walletAddress?: string) => {
     isQuoteExpired: swapQuotes.isExpired,
     timeToExpiry: swapQuotes.timeToExpiry,
 
-    // Swap execution state
-    isExecutingSwap: swapExecution.isLoading,
+    // Swap execution state (use privacy execution state if privacy mode is enabled)
+    isExecutingSwap: isPrivacyModeEnabled ? privacySwapExecution.isExecuting : swapExecution.isLoading,
     isSwapSuccess: swapExecution.isSuccess,
     isSwapError: swapExecution.isError,
     swapError: swapExecution.error,

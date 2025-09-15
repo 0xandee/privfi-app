@@ -3,10 +3,15 @@ import { useSwapForm } from '../hooks';
 import { WalletConnectionButton, WalletModal } from '@/features/wallet/components';
 import { SwapCard } from './SwapCard';
 import { SwapErrorBoundary } from './SwapErrorBoundary';
+import { PrivacyModeToggle } from '@/features/privacy/components/PrivacyModeToggle';
+import { PrivacySwapProgress } from '@/features/privacy/components/PrivacySwapProgress';
+import { PrivacyDepositBalance } from '@/features/privacy/components/PrivacyDepositBalance';
+import { usePrivacyStore } from '@/features/privacy/store/privacyStore';
 
 const SwapInterface = () => {
   const walletConnection = useWalletConnection();
   const swapForm = useSwapForm(walletConnection.address);
+  const { isPrivacyModeEnabled, flowState } = usePrivacyStore();
 
   return (
     <div className="flex-1 flex items-center justify-center p-4 flex-col">
@@ -33,6 +38,28 @@ const SwapInterface = () => {
           </div>
         </div>
       </div>
+
+      {/* Privacy Mode Toggle */}
+      {walletConnection.isConnected && (
+        <div className="w-full max-w-md mb-3">
+          <PrivacyModeToggle />
+        </div>
+      )}
+
+      {/* Privacy Swap Progress */}
+      {flowState.phase !== 'idle' && (
+        <div className="w-full max-w-md mb-3">
+          <PrivacySwapProgress />
+        </div>
+      )}
+
+      {/* Privacy Deposit Balance */}
+      {isPrivacyModeEnabled && walletConnection.isConnected && (
+        <div className="w-full max-w-md mb-3">
+          <PrivacyDepositBalance />
+        </div>
+      )}
+
       <div className="w-full max-w-md bg-[#1C1C1C] rounded-xl p-3">
         {/* Error Display */}
         {/* {walletConnection.connectError && (

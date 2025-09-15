@@ -12,13 +12,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Run E2E tests**: `npx playwright test` (tests expect server on port 8084, automatically starts dev server via `webServer` config)
 - **Deploy to Vercel**: `vercel --prod` (requires Vercel CLI installed)
 
+### Backend Development Commands (Privacy Server)
+
+- **Start backend dev server**: `cd backend && npm run dev` (runs on port 3001 with hot reload)
+- **Build backend**: `cd backend && npm run build`
+- **Start backend production**: `cd backend && npm start`
+- **Backend setup**: Copy `backend/.env.example` to `backend/.env` and configure proxy wallet settings
+
 Note: This project uses Yarn 4.8.1 with PnP. All npm commands work via Yarn compatibility layer.
 
 ## Project Architecture
 
-This is **Privfi** - a React-based private cryptocurrency swap application built with Vite and TypeScript, using shadcn/ui components. The project follows a **feature-based architecture** with clear module boundaries and centralized state management.
+This is **Privfi** - a React-based private cryptocurrency swap application built with Vite and TypeScript, using shadcn/ui components. The project follows a **feature-based architecture** with clear module boundaries and centralized state management. Includes a **backend privacy server** for enhanced privacy swaps through proxy wallet execution.
 
 **Current Deployment**: https://privfi-app.vercel.app
+**Backend Service**: Node.js/Express server for Phase III enhanced privacy features
 
 ### Tech Stack
 - **Frontend**: React 18 + TypeScript
@@ -40,7 +48,7 @@ src/
 ├── features/           # Feature modules
 │   ├── swap/          # All swap-related functionality
 │   │   ├── components/ # Swap UI components
-│   │   ├── hooks/     # Swap-specific hooks
+│   │   ├── hooks/     # Swap-specific hooks (includes usePrivacySwapExecution.ts)
 │   │   ├── services/  # DEX integrations & factory pattern
 │   │   ├── store/     # Zustand store for swap state
 │   │   ├── types/     # Swap-related TypeScript types
@@ -50,12 +58,17 @@ src/
 │   │   ├── hooks/     # Wallet connection hooks
 │   │   ├── store/     # Zustand store for wallet state
 │   │   └── types/     # Wallet-related TypeScript types
-│   └── withdraw/      # All withdraw-related functionality
-│       ├── components/ # Withdraw UI components
-│       ├── hooks/     # Withdraw-specific hooks
-│       ├── services/  # Withdraw service implementations
-│       ├── store/     # Zustand store for withdraw state
-│       └── types/     # Withdraw-related TypeScript types
+│   ├── withdraw/      # All withdraw-related functionality
+│   │   ├── components/ # Withdraw UI components
+│   │   ├── hooks/     # Withdraw-specific hooks
+│   │   ├── services/  # Withdraw service implementations
+│   │   ├── store/     # Zustand store for withdraw state
+│   │   └── types/     # Withdraw-related TypeScript types
+│   └── privacy/       # Enhanced privacy features (Phase III)
+│       ├── components/ # PrivacyModeToggle, PrivacySwapProgress, PrivacyDepositBalance
+│       ├── hooks/     # usePrivacySwap.ts for privacy flow execution
+│       ├── services/  # PrivacyFlowOrchestrator.ts for 5-phase privacy swaps
+│       └── store/     # privacyStore.ts for privacy mode state
 ├── shared/            # Shared across features
 │   ├── components/ui/ # shadcn/ui component library
 │   ├── hooks/        # Generic reusable hooks
@@ -75,6 +88,7 @@ src/
 - `features/swap/store/swapStore.ts` - Swap form state, quotes, settings with localStorage persistence
 - `features/wallet/store/walletStore.ts` - Wallet connection state
 - `features/withdraw/store/withdrawStore.ts` - Withdraw form state and transaction management
+- `features/privacy/store/privacyStore.ts` - Privacy mode state and enhanced privacy flow management
 - `shared/store/appStore.ts` - Global application state
 
 **React Query:** Server state management for API calls and caching
@@ -91,9 +105,10 @@ src/
 ### Import Path Strategy
 
 Modular imports through feature boundaries:
-- `@/features/swap` - All swap functionality
+- `@/features/swap` - All swap functionality (includes privacy swap execution hooks)
 - `@/features/wallet` - All wallet functionality
 - `@/features/withdraw` - All withdraw functionality
+- `@/features/privacy` - Enhanced privacy features (Phase III implementation)
 - `@/shared` - Shared utilities, components, types
 - `@/core` - Core infrastructure
 
@@ -128,6 +143,7 @@ Each feature module exports through index files for clean API boundaries.
 - **Typhoon Privacy Protocol**: zk-SNARK based private transactions with SDK integration
 - **Quote Management**: Expiry checking, price impact calculation, multi-route aggregation
 - **Privacy Features**: Private swaps and withdrawals with note commitment/nullifier system
+- **Enhanced Privacy (Phase III)**: 5-phase privacy flow with proxy wallet execution for complete transaction unlinkability
 
 ### Styling System
 - **Tailwind CSS** with custom classes in `index.css`
@@ -158,6 +174,84 @@ Each feature module exports through index files for clean API boundaries.
 - Large WASM files in `public/wasm/` for zero-knowledge proof generation
 - Files include `deposit.wasm`, `withdraw.wasm`, and `withdraw_0001.zkey` (~46MB)
 - Requires specific CORS headers: `Cross-Origin-Embedder-Policy: require-corp` and `Cross-Origin-Opener-Policy: same-origin`
+
+## Backend Architecture (Enhanced Privacy System)
+
+### Backend Service Structure
+Located in `/backend` directory, the privacy server enables Phase III enhanced privacy features:
+
+```
+backend/
+├── src/
+│   ├── index.ts              # Express server setup and main entry point
+│   ├── routes/               # API routes
+│   │   ├── proxy.ts         # Privacy swap endpoints (POST /api/proxy/swap, etc.)
+│   │   └── health.ts        # Health check endpoint
+│   ├── services/            # Core privacy services
+│   │   ├── ProxyWalletManager.ts      # Hot wallet management with private key storage
+│   │   ├── TransactionQueue.ts        # FIFO queue with retry logic
+│   │   ├── PrivacyDepositManager.ts   # Typhoon deposit tracking and selection
+│   │   └── ProxyExecutor.ts           # Handles withdrawals, swaps, and re-deposits
+│   ├── types/               # TypeScript type definitions
+│   ├── middleware/          # Express middleware
+│   └── utils/              # Utility functions
+├── .env                    # Environment variables (proxy wallet config)
+├── .env.example           # Environment template
+├── tsconfig.json         # TypeScript configuration
+└── package.json         # Backend dependencies
+```
+
+### Enhanced Privacy Flow (Phase III)
+
+**5-Phase Privacy Architecture:**
+1. **Phase 1 - Depositing**: User deposits tokens to Typhoon (client-side)
+2. **Phase 2 - Withdrawing**: Proxy wallet withdraws from Typhoon
+3. **Phase 3 - Swapping**: Proxy executes swap via AVNU
+4. **Phase 4 - Re-depositing**: Proxy re-deposits swapped tokens to Typhoon
+5. **Phase 5 - Ready to Withdraw**: User withdraws from Typhoon (client-side)
+
+**Key Privacy Benefits:**
+- Complete transaction unlinkability between user and DEX
+- Proxy wallet serves as intermediary with no connection to user identity
+- Sequential processing prevents nonce conflicts
+- Hot wallet approach with ETH pre-funding for gas fees
+
+### Backend Configuration Requirements
+
+**Essential Environment Variables:**
+- `PROXY_WALLET_ADDRESS` - Proxy wallet address for privacy operations
+- `PROXY_WALLET_PRIVATE_KEY` - Private key (secure storage required)
+- `TYPHOON_CONTRACT_ADDRESS` - Typhoon protocol contract address
+- `STARKNET_RPC_URL` - StarkNet RPC endpoint (optional, defaults to public)
+- `MIN_ETH_BALANCE` - Minimum ETH balance threshold (default: 0.01)
+
+### Backend API Endpoints
+
+- `POST /api/proxy/swap` - Initiate privacy swap execution
+- `GET /api/proxy/swap/:swapId` - Get swap status and progress
+- `GET /api/proxy/swaps/:userAddress` - Get user's active swaps
+- `GET /api/proxy/swap/:swapId/stream` - SSE stream for real-time updates
+- `POST /api/proxy/deposits` - Track new Typhoon deposits
+- `GET /api/proxy/deposits/:userAddress` - Get user's deposits
+- `GET /api/proxy/balance/:userAddress/:tokenAddress` - Get total shielded balance
+- `GET /api/proxy/queue/status` - Transaction queue status
+- `GET /api/health` - Health check endpoint
+
+### Integration Between Frontend and Backend
+
+**Frontend Privacy Components:**
+- `PrivacyModeToggle` - Enables/disables enhanced privacy mode
+- `PrivacySwapProgress` - Shows 5-phase progress tracking
+- `PrivacyDepositBalance` - Displays total shielded balances
+- `usePrivacySwap` hook - Manages privacy swap execution
+- `usePrivacySwapExecution` hook - Coordinates with privacy store
+
+**Privacy Flow Coordination:**
+- Frontend initiates privacy swaps via backend API
+- Real-time progress updates through SSE streams
+- Frontend handles Phases 1 and 5 (user Typhoon interactions)
+- Backend handles Phases 2-4 (proxy wallet operations)
+- State synchronization between frontend privacy store and backend queue
 
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
