@@ -24,6 +24,10 @@ interface WithdrawalData {
     note: string;
     nullifier: string;
     commitmentHash: string;
+    // Enhanced data for actual withdrawals (from real SDK)
+    secrets?: string[];
+    nullifiers?: string[];
+    pools?: string[];
   };
   tokenAddress: string;
   amount: string;

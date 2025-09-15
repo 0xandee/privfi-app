@@ -163,6 +163,12 @@ export class TyphoonSDKService {
         const nullifiers = freshSDK.get_nullifiers();
         const pools = freshSDK.get_pools();
 
+        // Generate note for future withdrawals
+        let note = '';
+        if (secrets?.length && nullifiers?.length && pools?.length) {
+          note = `typhoon-${pools[0]}-${secrets[0]}-${nullifiers[0]}`;
+        }
+
         // Save the deposit data with a temporary ID for the proxy to use later
         const tempDepositId = `user_${userAddress}_${Date.now()}`;
         const depositData: TyphoonDeposit = {
@@ -177,6 +183,7 @@ export class TyphoonSDKService {
             secrets: secrets || [],
             nullifiers: nullifiers || [],
             pools: pools || [],
+            note,
             swapParams
           }
         };
@@ -232,6 +239,12 @@ export class TyphoonSDKService {
       const pools = freshSDK.get_pools();
 
       if (secrets?.length || nullifiers?.length || pools?.length) {
+        // Generate note for future withdrawals
+        let note = '';
+        if (secrets?.length && nullifiers?.length && pools?.length) {
+          note = `typhoon-${pools[0]}-${secrets[0]}-${nullifiers[0]}`;
+        }
+
         const depositData: TyphoonDeposit = {
           depositId: swapTxHash,
           txHash: swapTxHash,
@@ -244,6 +257,7 @@ export class TyphoonSDKService {
             secrets: secrets || [],
             nullifiers: nullifiers || [],
             pools: pools || [],
+            note,
             isProxyDeposit: true,
             originalUserAddress: userAddress
           }
@@ -450,9 +464,40 @@ export class TyphoonSDKService {
   }
 
   /**
+   * Get deposit data by transaction hash
+   */
+  async getDepositData(txHash: string): Promise<TyphoonDeposit | null> {
+    try {
+      // Search all user deposits for matching transaction hash
+      const allUserAddresses = this.depositManager.getAllUserAddresses();
+
+      for (const userAddress of allUserAddresses) {
+        const deposit = this.depositManager.getDepositByTxHash(userAddress, txHash);
+        if (deposit) {
+          this.logger.info('Found deposit data by txHash', {
+            userAddress,
+            txHash,
+            hasSecrets: (deposit.typhoonData?.secrets || []).length > 0,
+            hasNullifiers: (deposit.typhoonData?.nullifiers || []).length > 0,
+            hasPools: (deposit.typhoonData?.pools || []).length > 0
+          });
+          return deposit;
+        }
+      }
+
+      this.logger.warn('No deposit data found for txHash', { txHash });
+      return null;
+    } catch (error) {
+      this.logger.error('Failed to get deposit data', error);
+      return null;
+    }
+  }
+
+  /**
    * Generate withdrawal transaction calls for user execution
    */
   async generateUserWithdrawalCalls(
+    txHash: string,
     typhoonData: any,
     recipientAddress: string
   ): Promise<TyphoonDepositCall[]> {
@@ -469,10 +514,20 @@ export class TyphoonSDKService {
         typhoonData.pools || []
       );
 
-      // Generate withdrawal calls
-      const withdrawalCalls = await freshSDK.generate_withdraw_calls(
-        typhoonData.note,
-        typhoonData.nullifier,
+      // Ensure txHash has correct format (with 0x prefix)
+      const formattedTxHash = txHash.startsWith('0x') ? txHash : `0x${txHash}`;
+
+      this.logger.info('Generating withdrawal calls', {
+        formattedTxHash,
+        recipientAddress,
+        hasSecrets: (typhoonData.secrets || []).length > 0,
+        hasNullifiers: (typhoonData.nullifiers || []).length > 0,
+        hasPools: (typhoonData.pools || []).length > 0
+      });
+
+      // Generate withdrawal calls using the transaction hash (as per Typhoon SDK docs)
+      const withdrawalCalls = await freshSDK.get_withdraw_calldata(
+        formattedTxHash,
         [recipientAddress]
       );
 

@@ -1,6 +1,7 @@
 import { useSwapStore } from '@/features/swap/store/swapStore';
 import { usePrivacyStore } from '../store/privacyStore';
 import { useAccount } from '@starknet-react/core';
+import { RpcProvider } from 'starknet';
 
 export enum PrivacyFlowPhase {
   IDLE = 'idle',
@@ -205,7 +206,6 @@ export class PrivacyFlowOrchestrator {
 
       if (!provider) {
         // Create a basic provider from the RPC URL as fallback
-        const { RpcProvider } = await import('starknet');
         provider = new RpcProvider({
           nodeUrl: 'https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_9/FXZBPkx6KsqGG8OFIH7fD'
         });

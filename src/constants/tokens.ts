@@ -56,11 +56,28 @@ export const getTokenBySymbol = (symbol: string): Token | undefined => {
   return STARKNET_TOKENS[symbol];
 };
 
+// Helper function to normalize address by removing leading zeros after 0x
+const normalizeAddress = (address: string): string => {
+  if (!address || !address.startsWith('0x')) return address;
+
+  // Remove 0x prefix, remove leading zeros, then add 0x back
+  const withoutPrefix = address.slice(2);
+  const withoutLeadingZeros = withoutPrefix.replace(/^0+/, '');
+
+  // If all characters were zeros, keep at least one
+  return '0x' + (withoutLeadingZeros || '0');
+};
+
 // Get token by address
 export const getTokenByAddress = (address: string): Token | undefined => {
-  return Object.values(STARKNET_TOKENS).find(
-    token => token.address.toLowerCase() === address.toLowerCase()
-  );
+  if (!address) return undefined;
+
+  const normalizedInputAddress = normalizeAddress(address.toLowerCase());
+
+  return Object.values(STARKNET_TOKENS).find(token => {
+    const normalizedTokenAddress = normalizeAddress(token.address.toLowerCase());
+    return normalizedTokenAddress === normalizedInputAddress;
+  });
 };
 
 // Format token amount with proper decimals

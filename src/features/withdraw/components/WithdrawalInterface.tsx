@@ -12,7 +12,7 @@ import { useWalletConnection } from '@/features/wallet/hooks/useWalletConnection
 import { WalletConnectionButton } from '@/features/wallet/components/WalletConnectionButton';
 import { WalletModal } from '@/features/wallet/components/WalletModal';
 import { formatUnits } from 'ethers';
-import { getTokenByAddress, formatBalanceForDisplay } from '@/constants/tokens';
+import { STARKNET_TOKENS, getTokenByAddress, formatBalanceForDisplay } from '@/constants/tokens';
 
 const VOYAGER_BASE_URL = 'https://voyager.online/tx';
 
@@ -35,14 +35,6 @@ export const WithdrawalInterface: React.FC = () => {
 
   // Use the address from StarkNet React (which is more reliable)
   const address = connectedAddress || walletStoreAddress;
-
-  // Debug logging
-  console.log('WithdrawalInterface - Wallet State:', {
-    connectedAddress,
-    walletStoreAddress,
-    isConnected,
-    finalAddress: address
-  });
   const {
     isLoading,
     error,
@@ -53,6 +45,10 @@ export const WithdrawalInterface: React.FC = () => {
     executeWithdrawal,
     resetState
   } = useWithdrawal();
+
+  // Debug log withdrawal data
+  console.log('WithdrawalInterface - withdrawalData:', withdrawalData);
+  console.log('WithdrawalInterface - hasWithdrawalData:', hasWithdrawalData);
 
   const handleWithdraw = async () => {
     if (!withdrawalData) return;
@@ -72,7 +68,12 @@ export const WithdrawalInterface: React.FC = () => {
   };
 
   const getTokenInfo = (tokenAddress: string) => {
+    // Debug log to see what tokenAddress we're getting
+    console.log('Getting token info for address:', tokenAddress);
+
     const token = getTokenByAddress(tokenAddress);
+    console.log('Found token:', token);
+
     return {
       symbol: token?.symbol || tokenAddress.slice(0, 6) + '...',
       decimals: token?.decimals || 18,
@@ -198,12 +199,28 @@ export const WithdrawalInterface: React.FC = () => {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Token:</span>
-                <span className="font-mono">{getTokenSymbol(withdrawalData.tokenAddress)}</span>
+                <div className="flex items-center gap-2">
+                  {(() => {
+                    const tokenInfo = getTokenInfo(withdrawalData.tokenAddress);
+                    return (
+                      <>
+                        {tokenInfo.logoURI && (
+                          <img src={tokenInfo.logoURI} alt={tokenInfo.symbol} className="w-5 h-5" />
+                        )}
+                        <span className="font-mono">{tokenInfo.symbol}</span>
+                      </>
+                    );
+                  })()}
+                </div>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Amount:</span>
                 <span className="font-mono">
-                  {formatUnits(withdrawalData.amount, 18)}
+                  {(() => {
+                    const tokenInfo = getTokenInfo(withdrawalData.tokenAddress);
+                    const rawAmount = formatUnits(withdrawalData.amount, tokenInfo.decimals);
+                    return formatBalanceForDisplay(rawAmount, tokenInfo.symbol);
+                  })()}
                 </span>
               </div>
             </div>

@@ -53,6 +53,11 @@ export interface AVNUBuildResponse {
   estimatedGas?: string;
 }
 
+export interface SwapResult {
+  txHash: string;
+  buyAmount: string;
+}
+
 export class AVNUService {
   private static instance: AVNUService;
   private client: AxiosInstance;
@@ -219,7 +224,7 @@ export class AVNUService {
     buyTokenAddress: string,
     sellAmount: string,
     slippage: number
-  ): Promise<string> {
+  ): Promise<SwapResult> {
     try {
       const proxyAddress = this.walletManager.getAccount().address;
 
@@ -255,7 +260,10 @@ export class AVNUService {
         buyAmount: bestQuote.buyAmount
       });
 
-      return txHash;
+      return {
+        txHash,
+        buyAmount: bestQuote.buyAmount
+      };
     } catch (error) {
       this.logger.error('Failed to execute AVNU swap', error);
       throw error;

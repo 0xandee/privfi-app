@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { usePrivacyStore } from '@/features/privacy/store/privacyStore';
 import { useWalletStore } from '@/features/wallet/store/walletStore';
-import { useAccount } from '@starknet-react/core';
+import { useAccount, useConnect } from '@starknet-react/core';
 import { WithdrawalService, WithdrawalRequest, WithdrawalResponse } from '../services/WithdrawalService';
 
 interface WithdrawalState {
@@ -20,16 +20,19 @@ export const useWithdrawal = () => {
   });
 
   const { withdrawalData, clearWithdrawalData } = usePrivacyStore();
-  const { address } = useWalletStore();
-  const { account } = useAccount();
+  const { address: walletStoreAddress } = useWalletStore();
+  const { address: connectedAddress, account, isConnected } = useAccount();
   const withdrawalService = WithdrawalService.getInstance();
+
+  // Use the same address logic as WithdrawalInterface
+  const address = connectedAddress || walletStoreAddress;
 
   const executeWithdrawal = useCallback(async (
     tokenAddress: string,
     amount: string,
     recipientAddress?: string
   ): Promise<void> => {
-    if (!address || !account) {
+    if (!address || !account || !isConnected) {
       setState(prev => ({ ...prev, error: 'Wallet not connected' }));
       return;
     }
@@ -53,6 +56,7 @@ export const useWithdrawal = () => {
         tokenAddress,
         amount,
         recipientAddress: recipientAddress || address,
+        txHash: withdrawalData.txHash, // Include transaction hash for SDK
         typhoonData: withdrawalData.typhoonData
       };
 
@@ -86,7 +90,7 @@ export const useWithdrawal = () => {
         isSuccess: false
       });
     }
-  }, [address, account, withdrawalData, withdrawalService, clearWithdrawalData]);
+  }, [address, account, isConnected, withdrawalData, withdrawalService, clearWithdrawalData]);
 
   const waitForTransaction = async (account: any, txHash: string): Promise<void> => {
     try {

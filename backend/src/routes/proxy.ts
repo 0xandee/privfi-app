@@ -437,17 +437,19 @@ proxyRouter.post('/withdrawal-calls', async (req: Request, res: Response, next: 
       tokenAddress,
       amount,
       recipientAddress,
+      txHash,
       typhoonData
     } = req.body;
 
-    if (!userAddress || !tokenAddress || !amount || !typhoonData) {
-      throw new AppError('Missing required parameters for withdrawal calls', 400);
+    if (!userAddress || !tokenAddress || !amount || !txHash || !typhoonData) {
+      throw new AppError('Missing required parameters for withdrawal calls (need txHash)', 400);
     }
 
     const typhoonService = TyphoonSDKService.getInstance();
 
-    // Generate withdrawal transaction calls using stored Typhoon data
+    // Generate withdrawal transaction calls using transaction hash
     const withdrawalCalls = await typhoonService.generateUserWithdrawalCalls(
+      txHash,
       typhoonData,
       recipientAddress || userAddress
     );
@@ -456,7 +458,9 @@ proxyRouter.post('/withdrawal-calls', async (req: Request, res: Response, next: 
       userAddress,
       tokenAddress,
       amount,
-      recipientAddress
+      recipientAddress,
+      txHash,
+      callsCount: withdrawalCalls.length
     });
 
     res.json({

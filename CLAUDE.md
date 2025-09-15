@@ -18,6 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Build backend**: `cd backend && npm run build`
 - **Start backend production**: `cd backend && npm start`
 - **Backend setup**: Copy `backend/.env.example` to `backend/.env` and configure proxy wallet settings
+- **Test backend**: `cd backend && npm test` (currently placeholder)
 
 Note: This project uses Yarn 4.8.1 with PnP. All npm commands work via Yarn compatibility layer.
 
@@ -64,6 +65,10 @@ src/
 │   │   ├── services/  # Withdraw service implementations
 │   │   ├── store/     # Zustand store for withdraw state
 │   │   └── types/     # Withdraw-related TypeScript types
+│   ├── verification/  # Token verification features
+│   │   ├── components/ # Verification UI components
+│   │   ├── hooks/     # Verification hooks
+│   │   └── types/     # Verification types
 │   └── privacy/       # Enhanced privacy features (Phase III)
 │       ├── components/ # PrivacyModeToggle, PrivacySwapProgress, PrivacyDepositBalance
 │       ├── hooks/     # usePrivacySwap.ts for privacy flow execution
@@ -108,6 +113,7 @@ Modular imports through feature boundaries:
 - `@/features/swap` - All swap functionality (includes privacy swap execution hooks)
 - `@/features/wallet` - All wallet functionality
 - `@/features/withdraw` - All withdraw functionality
+- `@/features/verification` - Token verification features
 - `@/features/privacy` - Enhanced privacy features (Phase III implementation)
 - `@/shared` - Shared utilities, components, types
 - `@/core` - Core infrastructure
@@ -154,9 +160,10 @@ Each feature module exports through index files for clean API boundaries.
 ### Development Configuration
 - **ESLint**: React and TypeScript rules with `@typescript-eslint/no-unused-vars` disabled
 - **Lovable Tagger**: Component tagging in development mode
-- **Vite Server**: IPv6 (::) binding for broader network access
+- **Vite Server**: IPv6 (::) binding for broader network access, port 8080 for dev, 8084 for tests
 - **TypeScript**: Relaxed settings (no strict null checks, allows unused parameters)
 - **Playwright**: E2E testing configuration for major browsers and mobile viewports
+- **Test Configuration**: Automatic dev server startup via `webServer` config in `playwright.config.ts`
 
 ### Package Management
 - **Yarn 4.8.1** with PnP (Plug'n'Play) system
@@ -252,6 +259,45 @@ backend/
 - Frontend handles Phases 1 and 5 (user Typhoon interactions)
 - Backend handles Phases 2-4 (proxy wallet operations)
 - State synchronization between frontend privacy store and backend queue
+
+## Development Workflow Patterns
+
+### Feature Development Approach
+- **Feature-First**: Organize code by business feature, not technical layer
+- **Store per Feature**: Each feature maintains its own Zustand store with persistence
+- **Service Layer**: Abstract external API interactions behind service interfaces
+- **Error Boundaries**: Implement feature-specific error boundaries to prevent app-wide crashes
+
+### State Management Best Practices
+- **Client State**: Use Zustand stores with localStorage persistence for user preferences and form state
+- **Server State**: Use React Query for API calls, caching, and synchronization
+- **Privacy State**: Enhanced privacy flows require careful state management across frontend/backend boundary
+
+### Key File Locations
+- **Main App Entry**: `src/App.tsx` - Root component with all providers
+- **Routing**: `src/pages/` - Route-based page components
+- **Privacy Flow**: `src/features/privacy/services/PrivacyFlowOrchestrator.ts` - Core privacy logic
+- **DEX Integration**: `src/features/swap/services/DEXFactory.ts` - Multi-DEX support
+- **Backend Entry**: `backend/src/index.ts` - Express server for privacy services
+
+### Important Configuration Files
+- **Vite Config**: `vite.config.ts` - Build configuration with WASM support
+- **TypeScript**: `tsconfig.json` - Relaxed TypeScript settings for rapid development
+- **Tailwind**: `tailwind.config.ts` - Custom theme and crypto-specific styling
+- **Playwright**: `playwright.config.ts` - E2E testing configuration
+- **Vercel**: `vercel.json` - Deployment configuration with WASM headers
+
+### Debugging Privacy Flows
+- **Browser DevTools**: Privacy flows involve multiple async phases, use browser DevTools Network tab
+- **Backend Logs**: Check backend console for proxy wallet operations and queue status
+- **Typhoon SDK**: Large WASM files may cause loading delays, check browser console for WASM errors
+- **State Inspection**: Use Redux DevTools extension to inspect Zustand store state changes
+
+### Integration Points
+- **Typhoon SDK**: Requires WASM files in `public/wasm/` and specific CORS headers
+- **AVNU API**: Route optimization through DEX aggregator with "Privfi" integrator identifier
+- **StarkNet**: Wallet connectivity via `@starknet-react/core` with Argent/Braavos connectors
+- **Proxy Wallet**: Backend service requires `PROXY_WALLET_PRIVATE_KEY` environment variable
 
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.

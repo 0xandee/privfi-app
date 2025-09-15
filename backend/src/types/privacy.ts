@@ -17,6 +17,7 @@ export interface PrivacySwapRequest {
   fromToken: string;
   toToken: string;
   amount: string;
+  buyAmount?: string; // Actual amount received from swap
   slippage: number;
   recipientAddress?: string;
   phase: PrivacyFlowPhase;

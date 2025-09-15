@@ -111,13 +111,14 @@ export class TransactionQueue extends EventEmitter {
         break;
 
       case PrivacyFlowPhase.SWAPPING:
-        const swapTx = await this.proxyExecutor.executeSwap(
+        const swapResult = await this.proxyExecutor.executeSwap(
           request.fromToken,
           request.toToken,
           request.amount,
           request.slippage
         );
-        request.proxyTxHashes.swap = swapTx;
+        request.proxyTxHashes.swap = swapResult.txHash;
+        request.buyAmount = swapResult.buyAmount; // Store the actual output amount
         request.phase = PrivacyFlowPhase.REDEPOSITING;
         break;
 
@@ -125,7 +126,8 @@ export class TransactionQueue extends EventEmitter {
         const redepositData = await this.proxyExecutor.redepositToTyphoon(
           request.toToken,
           request.proxyTxHashes.swap!,
-          request.userAddress
+          request.userAddress,
+          request.buyAmount // Pass the actual swap output amount
         );
         request.proxyTxHashes.redeposit = redepositData.txHash;
         request.typhoonData = redepositData.typhoonData;

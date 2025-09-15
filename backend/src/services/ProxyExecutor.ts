@@ -79,7 +79,7 @@ export class ProxyExecutor {
     toToken: string,
     amount: string,
     slippage: number
-  ): Promise<string> {
+  ): Promise<{txHash: string, buyAmount: string}> {
     try {
       this.logger.info('Executing AVNU swap via proxy wallet', {
         fromToken,
@@ -89,7 +89,7 @@ export class ProxyExecutor {
       });
 
       // Use AVNU service to execute swap
-      const txHash = await this.avnuService.executeSwap(
+      const swapResult = await this.avnuService.executeSwap(
         fromToken,
         toToken,
         amount,
@@ -97,13 +97,17 @@ export class ProxyExecutor {
       );
 
       this.logger.info('AVNU swap executed successfully', {
-        txHash,
+        txHash: swapResult.txHash,
         fromToken,
         toToken,
-        amount
+        amount,
+        buyAmount: swapResult.buyAmount
       });
 
-      return txHash;
+      return {
+        txHash: swapResult.txHash,
+        buyAmount: swapResult.buyAmount
+      };
     } catch (error) {
       this.logger.error('Failed to execute swap', error);
       throw error;
@@ -124,9 +128,14 @@ export class ProxyExecutor {
         estimatedAmount
       });
 
-      // Get actual swap output amount from transaction (simplified for now)
-      // In a real implementation, you'd query the transaction receipt
+      // Use the actual swap output amount (passed from executeSwap result)
       const amount = estimatedAmount || await this.getSwapOutputAmount(swapTxHash);
+
+      this.logger.info('Using swap output amount', {
+        estimatedAmount,
+        actualAmount: amount,
+        swapTxHash
+      });
 
       // Generate deposit calls for proxy wallet
       const depositCalls = await this.typhoonService.generateProxyDepositCalls(
@@ -142,12 +151,25 @@ export class ProxyExecutor {
         swapTxHash
       );
 
-      // Create mock typhoon data for compatibility
-      // In a real implementation, this would come from the SDK
-      const typhoonData = {
+      // Get the real deposit data that was saved during generateProxyDepositCalls
+      const depositData = await this.typhoonService.getDepositData(swapTxHash);
+
+      // Use real typhoonData if available, otherwise create compatible structure
+      const typhoonData = depositData?.typhoonData ? {
+        note: depositData.typhoonData.note || '',
+        nullifier: depositData.typhoonData.nullifiers?.[0] || '',
+        commitmentHash: depositData.typhoonData.pools?.[0] || '',
+        // Include the full SDK data for withdrawals
+        secrets: depositData.typhoonData.secrets || [],
+        nullifiers: depositData.typhoonData.nullifiers || [],
+        pools: depositData.typhoonData.pools || []
+      } : {
         note: `proxy_deposit_${Date.now()}`,
         nullifier: `proxy_nullifier_${Date.now()}`,
-        commitmentHash: `proxy_commitment_${Date.now()}`
+        commitmentHash: `proxy_commitment_${Date.now()}`,
+        secrets: [],
+        nullifiers: [],
+        pools: []
       };
 
       this.logger.info('Successfully re-deposited to Typhoon', {
