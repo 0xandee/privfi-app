@@ -21,7 +21,13 @@ export class ProxyWalletManager {
 
   private constructor() {
     const rpcUrl = process.env.STARKNET_RPC_URL || 'https://starknet-mainnet.public.blastapi.io';
-    this.provider = new RpcProvider({ nodeUrl: rpcUrl });
+
+    // Configure provider with explicit spec version to avoid channel mismatch
+    this.provider = new RpcProvider({
+      nodeUrl: rpcUrl,
+      // Force compatibility with RPC v0.9.0
+      chainId: constants.StarknetChainId.SN_MAIN
+    });
 
     const minBalance = process.env.MIN_ETH_BALANCE || '0.01';
     const alertBalance = process.env.ALERT_ETH_THRESHOLD || '0.0005';
