@@ -13,6 +13,47 @@ const transactionQueue = TransactionQueue.getInstance();
 const depositManager = PrivacyDepositManager.getInstance();
 const routeLogger = new logger.constructor('ProxyRouter');
 
+// Helper functions for detailed status
+function getPhaseStatus(swap: PrivacySwapRequest, targetPhase: PrivacyFlowPhase): 'pending' | 'completed' | 'failed' {
+  if (swap.phase === PrivacyFlowPhase.FAILED) {
+    return 'failed';
+  }
+
+  const phaseOrder = [
+    PrivacyFlowPhase.DEPOSITING,
+    PrivacyFlowPhase.WITHDRAWING,
+    PrivacyFlowPhase.SWAPPING,
+    PrivacyFlowPhase.REDEPOSITING,
+    PrivacyFlowPhase.READY_TO_WITHDRAW
+  ];
+
+  const currentIndex = phaseOrder.indexOf(swap.phase);
+  const targetIndex = phaseOrder.indexOf(targetPhase);
+
+  if (currentIndex > targetIndex) {
+    return 'completed';
+  } else if (currentIndex === targetIndex) {
+    return 'completed';
+  } else {
+    return 'pending';
+  }
+}
+
+function getCurrentPhaseNumber(phase: PrivacyFlowPhase): number {
+  const phaseNumbers = {
+    [PrivacyFlowPhase.PENDING]: 1,
+    [PrivacyFlowPhase.DEPOSITING]: 1,
+    [PrivacyFlowPhase.WITHDRAWING]: 2,
+    [PrivacyFlowPhase.SWAPPING]: 3,
+    [PrivacyFlowPhase.REDEPOSITING]: 4,
+    [PrivacyFlowPhase.READY_TO_WITHDRAW]: 5,
+    [PrivacyFlowPhase.COMPLETED]: 5,
+    [PrivacyFlowPhase.FAILED]: 0
+  };
+
+  return phaseNumbers[phase] || 1;
+}
+
 // Get deposit transaction calls for privacy swap
 proxyRouter.post('/deposit-calls', async (req: Request, res: Response, next: any) => {
   try {
@@ -272,6 +313,93 @@ proxyRouter.get('/swap/:swapId', async (req: Request, res: Response, next: any) 
   }
 });
 
+// Get detailed swap status with phase breakdown
+proxyRouter.get('/swap/:swapId/detailed', async (req: Request, res: Response, next: any) => {
+  try {
+    const { swapId } = req.params;
+    const swap = transactionQueue.getRequestById(swapId);
+
+    if (!swap) {
+      throw new AppError('Swap not found', 404);
+    }
+
+    // Calculate phase details
+    const phaseDetails = [
+      {
+        phase: 1,
+        name: 'User Deposit',
+        status: 'completed',
+        transactionHash: swap.depositTxHash,
+        description: 'User deposits tokens to Typhoon privacy pool'
+      },
+      {
+        phase: 2,
+        name: 'Proxy Withdrawal',
+        status: getPhaseStatus(swap, PrivacyFlowPhase.WITHDRAWING),
+        transactionHash: swap.proxyTxHashes?.withdrawal,
+        description: 'Proxy wallet withdraws from Typhoon pool'
+      },
+      {
+        phase: 3,
+        name: 'Anonymous Swap',
+        status: getPhaseStatus(swap, PrivacyFlowPhase.SWAPPING),
+        transactionHash: swap.proxyTxHashes?.swap,
+        description: 'Anonymous swap execution via AVNU DEX'
+      },
+      {
+        phase: 4,
+        name: 'Re-deposit',
+        status: getPhaseStatus(swap, PrivacyFlowPhase.REDEPOSITING),
+        transactionHash: swap.proxyTxHashes?.redeposit,
+        description: 'Proxy re-deposits swapped tokens to Typhoon'
+      },
+      {
+        phase: 5,
+        name: 'Ready for Withdrawal',
+        status: swap.phase === PrivacyFlowPhase.READY_TO_WITHDRAW ? 'completed' : 'pending',
+        transactionHash: null,
+        description: 'User can withdraw swapped tokens from Typhoon'
+      }
+    ];
+
+    // Calculate overall progress
+    const completedPhases = phaseDetails.filter(p => p.status === 'completed').length;
+    const totalProgress = Math.round((completedPhases / phaseDetails.length) * 100);
+
+    // Estimate completion time
+    const startTime = swap.createdAt.getTime();
+    const currentTime = Date.now();
+    const avgPhaseTime = 2 * 60 * 1000; // 2 minutes per phase
+    const remainingPhases = phaseDetails.filter(p => p.status === 'pending').length;
+    const estimatedCompletion = currentTime + (remainingPhases * avgPhaseTime);
+
+    const detailedStatus = {
+      swapId: swap.id,
+      currentPhase: getCurrentPhaseNumber(swap.phase),
+      totalProgress,
+      estimatedCompletion,
+      phaseDetails,
+      metadata: {
+        fromToken: swap.fromToken,
+        toToken: swap.toToken,
+        amount: swap.amount,
+        slippage: swap.slippage,
+        createdAt: swap.createdAt,
+        retryCount: swap.retryCount,
+        maxRetries: swap.maxRetries
+      },
+      error: swap.error
+    };
+
+    res.json({
+      status: 'success',
+      detailedStatus
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Get user's active swaps
 proxyRouter.get('/swaps/:userAddress', async (req: Request, res: Response, next: any) => {
   try {
@@ -298,6 +426,90 @@ proxyRouter.get('/queue/status', async (req: Request, res: Response, next: any) 
     });
   } catch (error) {
     next(error);
+  }
+});
+
+// Get withdrawal transaction calls for user execution
+proxyRouter.post('/withdrawal-calls', async (req: Request, res: Response, next: any) => {
+  try {
+    const {
+      userAddress,
+      tokenAddress,
+      amount,
+      recipientAddress,
+      typhoonData
+    } = req.body;
+
+    if (!userAddress || !tokenAddress || !amount || !typhoonData) {
+      throw new AppError('Missing required parameters for withdrawal calls', 400);
+    }
+
+    const typhoonService = TyphoonSDKService.getInstance();
+
+    // Generate withdrawal transaction calls using stored Typhoon data
+    const withdrawalCalls = await typhoonService.generateUserWithdrawalCalls(
+      typhoonData,
+      recipientAddress || userAddress
+    );
+
+    routeLogger.info('Withdrawal calls generated', {
+      userAddress,
+      tokenAddress,
+      amount,
+      recipientAddress
+    });
+
+    res.json({
+      status: 'success',
+      transactionCalls: withdrawalCalls
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Execute withdrawal for user (legacy endpoint for direct backend execution)
+proxyRouter.post('/withdraw', async (req: Request, res: Response, next: any) => {
+  try {
+    const {
+      userAddress,
+      tokenAddress,
+      amount,
+      recipientAddress,
+      typhoonData
+    } = req.body;
+
+    if (!userAddress || !tokenAddress || !amount || !typhoonData) {
+      throw new AppError('Missing required withdrawal parameters', 400);
+    }
+
+    const typhoonService = TyphoonSDKService.getInstance();
+
+    // For now, we'll generate calls and return them for frontend execution
+    // This maintains consistency with the privacy flow architecture
+    const withdrawalCalls = await typhoonService.generateUserWithdrawalCalls(
+      typhoonData,
+      recipientAddress || userAddress
+    );
+
+    routeLogger.info('Withdrawal transaction prepared', {
+      userAddress,
+      tokenAddress,
+      amount,
+      recipientAddress
+    });
+
+    res.json({
+      success: true,
+      message: 'Withdrawal calls generated - execute on frontend',
+      transactionCalls: withdrawalCalls
+    });
+  } catch (error) {
+    routeLogger.error('Withdrawal failed', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Withdrawal failed'
+    });
   }
 });
 

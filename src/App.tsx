@@ -8,6 +8,7 @@ import Layout from "./components/Layout";
 import Index from "./pages/Index";
 import HowItWorks from "./pages/HowItWorks";
 import Roadmap from "./pages/Roadmap";
+import Withdraw from "./pages/Withdraw";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
               <Route index element={<Index />} />
               <Route path="how-it-works" element={<HowItWorks />} />
               <Route path="roadmap" element={<Roadmap />} />
+              <Route path="withdraw" element={<Withdraw />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

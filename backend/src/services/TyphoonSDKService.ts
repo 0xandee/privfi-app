@@ -449,6 +449,45 @@ export class TyphoonSDKService {
     this.logger.warn('Deposit not found for clearing', { txHash });
   }
 
+  /**
+   * Generate withdrawal transaction calls for user execution
+   */
+  async generateUserWithdrawalCalls(
+    typhoonData: any,
+    recipientAddress: string
+  ): Promise<TyphoonDepositCall[]> {
+    try {
+      await this.initialize();
+
+      // Create fresh SDK instance for withdrawal generation
+      const freshSDK = new TyphoonSDK();
+
+      // Initialize SDK with the withdrawal data
+      freshSDK.init(
+        typhoonData.secrets || [],
+        typhoonData.nullifiers || [],
+        typhoonData.pools || []
+      );
+
+      // Generate withdrawal calls
+      const withdrawalCalls = await freshSDK.generate_withdraw_calls(
+        typhoonData.note,
+        typhoonData.nullifier,
+        [recipientAddress]
+      );
+
+      this.logger.info('Generated user withdrawal calls', {
+        recipientAddress,
+        callsCount: withdrawalCalls.length
+      });
+
+      return withdrawalCalls;
+    } catch (error) {
+      this.logger.error('Failed to generate user withdrawal calls:', error);
+      throw new Error(`Failed to generate withdrawal calls: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
   private validateTyphoonDeposit(data: TyphoonDeposit): void {
     if (!data.typhoonData) {
       throw new Error('Invalid deposit data: missing typhoonData');

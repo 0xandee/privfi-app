@@ -5,6 +5,9 @@ export const healthRouter = Router();
 
 healthRouter.get('/', async (req, res) => {
   try {
+    const walletManager = ProxyWalletManager.getInstance();
+    const walletStatus = await walletManager.getWalletStatus();
+
     res.json({
       status: 'ok',
       timestamp: new Date().toISOString(),
@@ -13,6 +16,11 @@ healthRouter.get('/', async (req, res) => {
         storage: 'initialized',
         typhoon: 'initialized',
         avnu: 'ready'
+      },
+      config: {
+        rpcUrl: process.env.STARKNET_RPC_URL,
+        network: process.env.STARKNET_NETWORK,
+        walletAddress: walletStatus.address
       }
     });
   } catch (error) {

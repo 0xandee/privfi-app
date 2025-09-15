@@ -171,6 +171,49 @@
         "slippage": 0,
         "recipientAddress": "0x05d13d25e7d00b0a125c6c81d183749aa2a571d3da6b4732c78e0960dc7e07ba"
       }
+    },
+    {
+      "depositId": "user_0x05d13d25e7d00b0a125c6c81d183749aa2a571d3da6b4732c78e0960dc7e07ba_1757923880616",
+      "txHash": "user_0x05d13d25e7d00b0a125c6c81d183749aa2a571d3da6b4732c78e0960dc7e07ba_1757923880616",
+      "userAddress": "0x05d13d25e7d00b0a125c6c81d183749aa2a571d3da6b4732c78e0960dc7e07ba",
+      "tokenAddress": "0x53c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8",
+      "amount": "0xf4240",
+      "timestamp": 1757923880616,
+      "status": "pending",
+      "typhoonData": {
+        "secrets": [
+          "72025232109635414441661211064797823770594270345691231289805116443342013869582"
+        ],
+        "nullifiers": [
+          "19392812380121415184166383523524704320842182138107042798269231232758114043440"
+        ],
+        "pools": [
+          "0x3f61eb8de9bddb98255d3f3a9dc39ad12ea2d561c0c448c8857f02424ce1ed8"
+        ],
+        "swapParams": {
+          "fromToken": "0x53c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8",
+          "toToken": "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
+          "amount": "0xf4240",
+          "slippage": 0.5,
+          "recipientAddress": "0x05d13d25e7d00b0a125c6c81d183749aa2a571d3da6b4732c78e0960dc7e07ba"
+        }
+      }
+    },
+    {
+      "depositId": "da8fe5a8-6d5b-41a6-b989-74889d8a6f2d",
+      "txHash": "user_0x05d13d25e7d00b0a125c6c81d183749aa2a571d3da6b4732c78e0960dc7e07ba_1757923880617",
+      "userAddress": "0x05d13d25e7d00b0a125c6c81d183749aa2a571d3da6b4732c78e0960dc7e07ba",
+      "tokenAddress": "0x53c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8",
+      "amount": "0xf4240",
+      "timestamp": 1757923880617,
+      "status": "pending",
+      "typhoonData": {
+        "fromToken": "0x53c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8",
+        "toToken": "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
+        "amount": "0xf4240",
+        "slippage": 0.5,
+        "recipientAddress": "0x05d13d25e7d00b0a125c6c81d183749aa2a571d3da6b4732c78e0960dc7e07ba"
+      }
     }
   ],
   "0x049729598f9bb8fc3a0f9f92e07796791347a41ff55f75d5a2491401e3e80803": [

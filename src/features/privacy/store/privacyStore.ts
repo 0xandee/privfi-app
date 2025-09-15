@@ -29,6 +29,17 @@ interface WithdrawalData {
   amount: string;
 }
 
+interface WithdrawalHistory {
+  id: string;
+  userAddress: string;
+  tokenAddress: string;
+  amount: string;
+  recipientAddress: string;
+  transactionHash: string;
+  timestamp: number;
+  status: 'pending' | 'confirmed' | 'failed';
+}
+
 interface PrivacyStore {
   // Privacy mode settings
   isPrivacyModeEnabled: boolean;
@@ -51,6 +62,12 @@ interface PrivacyStore {
   withdrawalData: WithdrawalData | null;
   setWithdrawalData: (data: WithdrawalData) => void;
   clearWithdrawalData: () => void;
+
+  // Withdrawal history
+  withdrawalHistory: WithdrawalHistory[];
+  addWithdrawalToHistory: (withdrawal: WithdrawalHistory) => void;
+  updateWithdrawalStatus: (transactionHash: string, status: WithdrawalHistory['status']) => void;
+  getWithdrawalHistory: (userAddress: string) => WithdrawalHistory[];
 
   // Active swaps
   activeSwaps: string[];
@@ -156,6 +173,28 @@ export const usePrivacyStore = create<PrivacyStore>()(
       clearWithdrawalData: () =>
         set({ withdrawalData: null }),
 
+      // Withdrawal history
+      withdrawalHistory: [],
+
+      addWithdrawalToHistory: (withdrawal) =>
+        set((state) => ({
+          withdrawalHistory: [...state.withdrawalHistory, withdrawal]
+        })),
+
+      updateWithdrawalStatus: (transactionHash, status) =>
+        set((state) => ({
+          withdrawalHistory: state.withdrawalHistory.map(w =>
+            w.transactionHash === transactionHash ? { ...w, status } : w
+          )
+        })),
+
+      getWithdrawalHistory: (userAddress) => {
+        const state = get();
+        return state.withdrawalHistory.filter(
+          w => w.userAddress.toLowerCase() === userAddress.toLowerCase()
+        );
+      },
+
       // Active swaps
       activeSwaps: [],
 
@@ -175,6 +214,7 @@ export const usePrivacyStore = create<PrivacyStore>()(
           deposits: [],
           flowState: initialFlowState,
           withdrawalData: null,
+          withdrawalHistory: [],
           activeSwaps: [],
           isPrivacyModeEnabled: false
         })
@@ -185,6 +225,7 @@ export const usePrivacyStore = create<PrivacyStore>()(
         isPrivacyModeEnabled: state.isPrivacyModeEnabled,
         deposits: state.deposits,
         withdrawalData: state.withdrawalData,
+        withdrawalHistory: state.withdrawalHistory,
         activeSwaps: state.activeSwaps
       })
     }
