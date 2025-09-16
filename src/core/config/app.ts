@@ -24,7 +24,7 @@ export const API_CONFIG = {
 
 export const RPC_CONFIG = {
   // Use a more reliable RPC endpoint for Typhoon SDK
-  starknetMainnet: 'https://starknet-mainnet.public.blastapi.io',
+  starknetMainnet: 'https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_9/FXZBPkx6KsqGG8OFIH7fD',
   // Alternative endpoints in case the primary fails
   fallbackEndpoints: [
     'https://starknet-mainnet.infura.io/v3/YOUR_API_KEY',

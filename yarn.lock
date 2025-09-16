@@ -6263,7 +6263,7 @@ __metadata:
     react-router-dom: "npm:^6.30.1"
     recharts: "npm:^2.15.4"
     sonner: "npm:^1.7.4"
-    starknet: "npm:^8.5.2"
+    starknet: "npm:^8.5.3"
     tailwind-merge: "npm:^2.6.0"
     tailwindcss: "npm:^3.4.17"
     tailwindcss-animate: "npm:^1.0.7"
@@ -7096,9 +7096,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"starknet@npm:^8.5.2":
-  version: 8.5.2
-  resolution: "starknet@npm:8.5.2"
+"starknet@npm:^8.5.3":
+  version: 8.5.3
+  resolution: "starknet@npm:8.5.3"
   dependencies:
     "@noble/curves": "npm:1.7.0"
     "@noble/hashes": "npm:1.6.0"
@@ -7110,7 +7110,7 @@ __metadata:
     lossless-json: "npm:^4.0.1"
     pako: "npm:^2.0.4"
     ts-mixer: "npm:^6.0.3"
-  checksum: 10c0/ae9e1edc8632bc16edb7387176c74dae23bb5256cafd03aee07d9ae5169ae61e8aec57a3c9870d15bea0f3d0eaa12003897a59375f40db1a21298ce349312dcd
+  checksum: 10c0/ca4a647ffa3c2890ce872c384df16d3caf37af5d8cc262d0a9f5cb07405b7065dfd31aedb2ebd7dfde0f24c3771ce6c406521c848ff1e522f0ac3f9ab3f480e9
   languageName: node
   linkType: hard
 

@@ -54,7 +54,11 @@ export class ProxyWalletManager {
         nodeUrl: rpcUrl
       });
 
-      this.account = new Account(this.provider, address, privateKey);
+      this.account = new Account({
+        provider: this.provider,
+        address: address,
+        signer: privateKey
+      });
 
       // Verify wallet connectivity
       await this.checkBalance();
@@ -77,8 +81,8 @@ export class ProxyWalletManager {
       const ethTokenAddress = '0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7';
 
       // Get ETH balance
-      const ethContract = new Contract(
-        [
+      const ethContract = new Contract({
+        abi: [
           {
             name: 'balanceOf',
             type: 'function',
@@ -87,9 +91,9 @@ export class ProxyWalletManager {
             stateMutability: 'view'
           }
         ],
-        ethTokenAddress,
-        this.provider
-      );
+        address: ethTokenAddress,
+        providerOrAccount: this.provider
+      });
 
       const balance = await ethContract.balanceOf(this.account.address);
       const balanceInWei = uint256.uint256ToBN(balance.balance);
