@@ -1,6 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { UnifiedDeposit, RawDepositFile1, RawDepositFile2, RawDepositFile3 } from './types';
+import { fileURLToPath } from 'url';
+import { UnifiedDeposit, RawDepositFile1, RawDepositFile2, RawDepositFile3 } from './types.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 class DepositUnifier {
   private downloadsPaths: string[] = [
@@ -278,7 +282,8 @@ async function main() {
   }
 }
 
-if (require.main === module) {
+// Check if this module is being run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
   main();
 }
 

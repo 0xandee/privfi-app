@@ -24,7 +24,7 @@ interface DepositStore {
 
   // Actions
   setCurrentDeposit: (deposit: DepositRecord | null) => void;
-  addDeposit: (deposit: DepositRecord) => void;
+  addDeposit: (deposit: DepositRecord, skipSupabaseSave?: boolean) => void;
   updateDeposit: (id: string, updates: Partial<DepositRecord>) => void;
   removeDeposit: (id: string) => void;
   setLoading: (loading: boolean) => void;
@@ -59,19 +59,22 @@ export const useDepositStore = create<DepositStore>()(
     // Basic actions (kept for backward compatibility)
     setCurrentDeposit: (deposit) => set({ currentDeposit: deposit }),
 
-    addDeposit: (deposit) => {
+    addDeposit: (deposit, skipSupabaseSave = false) => {
       set((state) => ({
         deposits: [deposit, ...state.deposits],
         currentDeposit: deposit,
       }));
 
-      // Async save to Supabase (fire and forget for optimistic updates)
-      supabaseDepositService
-        .createDeposit(supabaseDepositService.convertFromDepositRecord(deposit))
-        .catch((error) => {
-          console.error('Failed to sync deposit to Supabase:', error);
-          set({ syncError: `Failed to save deposit: ${error.message}` });
-        });
+      // Only save to Supabase if not already saved
+      if (!skipSupabaseSave) {
+        // Async save to Supabase (fire and forget for optimistic updates)
+        supabaseDepositService
+          .createDeposit(supabaseDepositService.convertFromDepositRecord(deposit))
+          .catch((error) => {
+            console.error('Failed to sync deposit to Supabase:', error);
+            set({ syncError: `Failed to save deposit: ${error.message}` });
+          });
+      }
     },
 
     updateDeposit: (id, updates) => {

@@ -1,27 +1,14 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { UnifiedDeposit, WithdrawalResult } from './types';
+import { fileURLToPath } from 'url';
+import { UnifiedDeposit, WithdrawalResult } from './types.js';
+import { TyphoonSDK } from 'typhoon-sdk';
 
-// Import TyphoonSDK with error handling for broken package
-let TyphoonSDK: any;
-
-try {
-  const typhoonModule = require('typhoon-sdk');
-  TyphoonSDK = typhoonModule.TyphoonSDK || typhoonModule;
-} catch (error) {
-  console.error('\n❌ TYPHOON SDK LOADING ERROR:');
-  console.error('The typhoon-sdk package has module compatibility issues.');
-  console.error('Error:', error instanceof Error ? error.message : error);
-  console.error('\nSOLUTIONS:');
-  console.error('1. Contact typhoon-sdk maintainers about the CJS/ESM issue');
-  console.error('2. Use the mock SDK for testing by commenting line above');
-  console.error('3. Wait for a fixed version of typhoon-sdk');
-  console.error('\nExiting...\n');
-  process.exit(1);
-}
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 class WithdrawalExecutor {
-  private sdk: typeof TyphoonSDK;
+  private sdk: TyphoonSDK;
   private results: WithdrawalResult[] = [];
 
   constructor() {
@@ -86,16 +73,35 @@ class WithdrawalExecutor {
         deposit.typhoonData.pools
       );
 
-      // Ensure transaction hash has 0x prefix for BigInt conversion
-      const formattedTxHash = deposit.txHash.startsWith('0x')
-        ? deposit.txHash
-        : `0x${deposit.txHash}`;
+      // Check if we have a valid transaction hash (should be hex format)
+      let txHashToUse: string;
 
-      console.log(`  📋 Getting withdrawal calldata...`);
+      if (deposit.txHash.startsWith('0x') && deposit.txHash.length > 10) {
+        // This looks like a real transaction hash
+        txHashToUse = deposit.txHash;
+      } else if (deposit.typhoonData.note) {
+        // Use the note field which contains proper Typhoon commitment data
+        // The note format is: typhoon-{pool}-{secret}-{nullifier}
+        // For withdrawal, we can use the secret as a pseudo-transaction hash
+        const noteParts = deposit.typhoonData.note.split('-');
+        if (noteParts.length >= 3) {
+          // Use the secret (3rd part) as transaction identifier
+          const secret = noteParts[2];
+          txHashToUse = `0x${secret}`;
+        } else {
+          // Fallback: use the first secret as hex
+          txHashToUse = `0x${deposit.typhoonData.secrets[0]}`;
+        }
+      } else {
+        // Last resort: use the first secret as transaction identifier
+        txHashToUse = `0x${deposit.typhoonData.secrets[0]}`;
+      }
+
+      console.log(`  📋 Getting withdrawal calldata with identifier: ${txHashToUse.slice(0, 20)}...`);
 
       // Get withdrawal calldata first to validate
       await this.sdk.get_withdraw_calldata(
-        formattedTxHash,
+        txHashToUse,
         [deposit.walletAddress] // Withdraw to original wallet
       );
 
@@ -103,7 +109,7 @@ class WithdrawalExecutor {
 
       // Execute withdrawal
       await this.sdk.withdraw(
-        formattedTxHash,
+        txHashToUse,
         [deposit.walletAddress] // Withdraw to original wallet
       );
 
@@ -112,7 +118,7 @@ class WithdrawalExecutor {
       this.results.push({
         depositId: deposit.depositId,
         success: true,
-        transactionHash: formattedTxHash,
+        transactionHash: txHashToUse,
         timestamp: Date.now()
       });
 
@@ -231,7 +237,8 @@ This script will:
   }
 }
 
-if (require.main === module) {
+// Check if this module is being run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
   main();
 }
 

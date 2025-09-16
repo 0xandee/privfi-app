@@ -101,7 +101,8 @@ export const useDepositExecution = () => {
 
           // Update local store (for immediate UI feedback)
           // The real-time subscription will also update this, but local update is faster
-          depositStore.addDeposit(supabaseDepositService.convertToDepositRecord(savedDeposit));
+          // Skip Supabase save since we already saved it above
+          depositStore.addDeposit(supabaseDepositService.convertToDepositRecord(savedDeposit), true);
         } catch (supabaseError) {
           console.error('Failed to save to Supabase, falling back to local store:', supabaseError);
 
