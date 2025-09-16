@@ -15,6 +15,7 @@ import {
   clearAllTyphoonData,
   TyphoonDepositData
 } from '../utils/typhoonStorage';
+import { supabaseDepositService } from '@/features/deposit/services/supabaseDepositService';
 
 export class TyphoonService extends BaseDEXService {
   private sdk: TyphoonSDK;
@@ -246,6 +247,50 @@ export class TyphoonService extends BaseDEXService {
   }
 
   /**
+   * Load deposit data from Supabase (preferred) or localStorage (fallback)
+   */
+  private async loadDepositDataFromSupabase(transactionHash: string): Promise<TyphoonDepositData | null> {
+    try {
+      // First try to get deposit from Supabase deposits table
+      const depositRow = await supabaseDepositService.getDepositByTransactionHash(transactionHash);
+
+      if (depositRow && depositRow.secrets && depositRow.nullifiers && depositRow.pools) {
+        // Convert Supabase deposit to TyphoonDepositData format
+        return {
+          transactionHash: depositRow.transaction_hash,
+          secrets: depositRow.secrets,
+          nullifiers: depositRow.nullifiers,
+          pools: depositRow.pools,
+          tokenAddress: depositRow.token_address,
+          amount: depositRow.amount,
+          timestamp: depositRow.timestamp,
+          walletAddress: depositRow.wallet_address,
+        };
+      }
+
+      // Fallback: try to get from typhoon_data table (for backward compatibility)
+      const typhoonData = await supabaseDepositService.getTyphoonData(transactionHash);
+      if (typhoonData) {
+        return {
+          transactionHash: typhoonData.transaction_hash,
+          secrets: typhoonData.secrets,
+          nullifiers: typhoonData.nullifiers,
+          pools: typhoonData.pools,
+          tokenAddress: typhoonData.token_address,
+          amount: typhoonData.amount,
+          timestamp: typhoonData.timestamp,
+          walletAddress: typhoonData.wallet_address,
+        };
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Failed to load deposit data from Supabase:', error);
+      return null;
+    }
+  }
+
+  /**
    * Withdraw funds after private swap completion
    * Restores SDK state from stored deposit data before withdrawal
    */
@@ -255,7 +300,13 @@ export class TyphoonService extends BaseDEXService {
       await this.initializeSDK('withdrawal');
 
       // CRITICAL: Load specific deposit data for this transaction
-      const depositData = loadTyphoonDepositData(withdrawRequest.transactionHash);
+      // First try Supabase (primary source), then localStorage (fallback)
+      let depositData = await this.loadDepositDataFromSupabase(withdrawRequest.transactionHash);
+
+      if (!depositData) {
+        console.log('No data in Supabase, trying localStorage fallback...');
+        depositData = loadTyphoonDepositData(withdrawRequest.transactionHash);
+      }
 
       if (!depositData) {
         throw new Error(`No deposit data found for transaction ${withdrawRequest.transactionHash}. Cannot withdraw without original deposit secrets.`);

@@ -1,0 +1,26 @@
+{
+  "name": "deposit-migration-scripts",
+  "version": "1.0.0",
+  "description": "Standalone scripts for unifying and withdrawing Typhoon deposits",
+  "type": "module",
+  "main": "unify-deposits.js",
+  "scripts": {
+    "unify": "node --loader ts-node/esm unify-deposits.ts",
+    "withdraw": "node --loader ts-node/esm withdraw.ts",
+    "withdraw:dry-run": "node --loader ts-node/esm withdraw.ts --dry-run",
+    "build": "tsc",
+    "clean": "rm -rf dist && rm -f *.json",
+    "help": "node --loader ts-node/esm withdraw.ts --help"
+  },
+  "dependencies": {
+    "typhoon-sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

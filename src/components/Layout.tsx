@@ -40,6 +40,28 @@ const Layout = () => {
               </Button>
             )}
           </NavLink>
+          <NavLink to="/deposit">
+            {({ isActive }) => (
+              <Button
+                variant="link"
+                className={`text-sm font-medium transition-colors hover:text-white ${isActive ? 'text-white' : 'text-gray-400'
+                  }`}
+              >
+                Deposit
+              </Button>
+            )}
+          </NavLink>
+          <NavLink to="/withdraw">
+            {({ isActive }) => (
+              <Button
+                variant="link"
+                className={`text-sm font-medium transition-colors hover:text-white ${isActive ? 'text-white' : 'text-gray-400'
+                  }`}
+              >
+                Withdraw
+              </Button>
+            )}
+          </NavLink>
           <NavLink to="/how-it-works">
             {({ isActive }) => (
               <Button

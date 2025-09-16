@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Build for development**: `npm run build:dev`
 - **Lint code**: `npm run lint`
 - **Preview production build**: `npm run preview`
-- **Run E2E tests**: `npx playwright test` (tests expect server on port 8084, automatically starts dev server via `webServer` config)
+- **Run E2E tests**: `npx playwright test` (configured but no tests implemented yet - Playwright config expects server on port 8084, needs alignment with dev server port 8080)
 - **Deploy to Vercel**: `vercel --prod` (requires Vercel CLI installed)
 
 Note: This project uses Yarn 4.8.1 with PnP. All npm commands work via Yarn compatibility layer.
@@ -50,23 +50,31 @@ src/
 │   │   ├── hooks/     # Wallet connection hooks
 │   │   ├── store/     # Zustand store for wallet state
 │   │   └── types/     # Wallet-related TypeScript types
-│   └── withdraw/      # All withdraw-related functionality
-│       ├── components/ # Withdraw UI components
-│       ├── hooks/     # Withdraw-specific hooks
-│       ├── services/  # Withdraw service implementations
-│       ├── store/     # Zustand store for withdraw state
-│       └── types/     # Withdraw-related TypeScript types
+│   └── deposit/       # Privacy-preserving deposit functionality
+│       ├── components/ # Deposit UI components
+│       ├── hooks/     # Deposit-specific hooks
+│       ├── services/  # Typhoon integration & Supabase tracking
+│       ├── store/     # Zustand store for deposit state
+│       └── types/     # Deposit-related TypeScript types
 ├── shared/            # Shared across features
 │   ├── components/ui/ # shadcn/ui component library
 │   ├── hooks/        # Generic reusable hooks
 │   ├── store/        # Global app state
 │   ├── types/        # Common TypeScript types
 │   └── utils/        # Utility functions and helpers
+├── components/        # Shared layout components (Layout.tsx, etc.)
 ├── core/             # Core application infrastructure
 │   ├── api/          # Base API configuration
 │   ├── config/       # App configuration
-│   └── providers/    # Core React providers (StarknetProvider)
+│   ├── providers/    # Core React providers (StarknetProvider, RealtimeProvider)
+│   └── supabase/     # Supabase client and database integration
+├── constants/        # Application constants and enums
 └── pages/            # Route-based page components
+    ├── Index.tsx     # Main swap interface
+    ├── Deposit.tsx   # Privacy deposit interface
+    ├── HowItWorks.tsx# Educational content
+    ├── Roadmap.tsx   # Project roadmap
+    └── NotFound.tsx  # 404 error page
 ```
 
 ### State Management Architecture
@@ -74,7 +82,7 @@ src/
 **Zustand Stores with Persistence:**
 - `features/swap/store/swapStore.ts` - Swap form state, quotes, settings with localStorage persistence
 - `features/wallet/store/walletStore.ts` - Wallet connection state
-- `features/withdraw/store/withdrawStore.ts` - Withdraw form state and transaction management
+- `features/deposit/store/depositStore.ts` - Deposit form state and privacy transaction tracking
 - `shared/store/appStore.ts` - Global application state
 
 **React Query:** Server state management for API calls and caching
@@ -93,7 +101,7 @@ src/
 Modular imports through feature boundaries:
 - `@/features/swap` - All swap functionality
 - `@/features/wallet` - All wallet functionality
-- `@/features/withdraw` - All withdraw functionality
+- `@/features/deposit` - All deposit and privacy functionality
 - `@/shared` - Shared utilities, components, types
 - `@/core` - Core infrastructure
 
@@ -129,6 +137,14 @@ Each feature module exports through index files for clean API boundaries.
 - **Quote Management**: Expiry checking, price impact calculation, multi-route aggregation
 - **Privacy Features**: Private swaps and withdrawals with note commitment/nullifier system
 
+### Database & Real-time Integration
+- **Supabase Client**: Configured for anonymous access with wallet address identification
+- **Privacy-Preserving Deposit Tracking**: `deposits` table stores encrypted secrets, nullifiers, and pool data
+- **Typhoon Data Storage**: Dedicated `typhoon_data` table for zk-SNARK proof metadata
+- **Real-time Subscriptions**: Live deposit status updates via Supabase real-time
+- **Row Level Security**: Anonymous users can read/write with validation in application layer
+- **Environment Variables**: Requires `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
+
 ### Styling System
 - **Tailwind CSS** with custom classes in `index.css`
 - **Custom CSS classes**: `.crypto-card`, `.token-input`, `.token-selector`, `.percentage-button`, `.swap-button`
@@ -138,9 +154,10 @@ Each feature module exports through index files for clean API boundaries.
 ### Development Configuration
 - **ESLint**: React and TypeScript rules with `@typescript-eslint/no-unused-vars` disabled
 - **Lovable Tagger**: Component tagging in development mode
-- **Vite Server**: IPv6 (::) binding for broader network access
+- **Vite Server**: IPv6 (::) binding on port 8080 for broader network access
 - **TypeScript**: Relaxed settings (no strict null checks, allows unused parameters)
-- **Playwright**: E2E testing configuration for major browsers and mobile viewports
+- **Playwright**: E2E testing configuration for major browsers and mobile viewports (configured but `tests/` directory not yet created)
+- **WASM Support**: Special CORS headers for `.wasm` and `.zkey` files during development
 
 ### Package Management
 - **Yarn 4.8.1** with PnP (Plug'n'Play) system
