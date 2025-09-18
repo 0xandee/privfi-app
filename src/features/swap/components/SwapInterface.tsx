@@ -89,7 +89,7 @@ const SwapInterface = () => {
       {/* Transaction Processing Warning */}
       <div className="flex flex-col items-center justify-center gap-2 text-xs px-24 py-3 sm:p-4">
         <span className="text-muted-foreground opacity-50 text-center">Do not refresh or close this page while transaction is processing</span>
-        <span className="text-muted-foreground opacity-50 text-center">Powered by Typhoon and AVNU</span>
+        <span className="text-muted-foreground opacity-50 text-center">Powered by AVNU</span>
       </div>
     </div>
   );

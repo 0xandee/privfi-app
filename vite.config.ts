@@ -9,17 +9,6 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    // Only apply CORS headers when needed for WASM, not for all requests
-    middlewares: [
-      (req, res, next) => {
-        // Only apply strict CORS headers for WASM-related requests
-        if (req.url?.includes('.wasm') || req.url?.includes('.zkey') || req.url?.includes('typhoon')) {
-          res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
-          res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-        }
-        next();
-      }
-    ],
   },
   plugins: [
     react(),
@@ -41,7 +30,6 @@ export default defineConfig(({ mode }) => ({
     global: 'globalThis',
   },
   optimizeDeps: {
-    exclude: ['typhoon-sdk'],
     esbuildOptions: {
       target: 'esnext',
     },
@@ -59,5 +47,4 @@ export default defineConfig(({ mode }) => ({
       }
     }
   },
-  assetsInclude: ['**/*.wasm', '**/*.zkey'],
 }));

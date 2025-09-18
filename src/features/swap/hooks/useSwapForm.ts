@@ -9,8 +9,6 @@ import { formatTokenAmountDisplay } from '@/shared/utils/lib/inputValidation';
 import { useMinimumAmountValidation } from './useMinimumAmountValidation';
 
 export const useSwapForm = (walletAddress?: string) => {
-  // Get privacy config from store
-  const { privacy } = useSwapStore();
   
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
@@ -38,14 +36,13 @@ export const useSwapForm = (walletAddress?: string) => {
     walletAddress,
   });
 
-  // Swap execution hook with privacy configuration
+  // Swap execution hook
   const swapExecution = useSwapExecution({
     selectedQuote: swapQuotes.selectedQuote,
     slippage,
-    recipientAddress: privacy.recipientAddress || undefined,
   });
 
-  // Minimum amount validation for private swaps
+  // Minimum amount validation
   const minimumAmountValidation = useMinimumAmountValidation({
     outputToken: toToken,
     outputAmount: toAmount,
@@ -184,7 +181,7 @@ export const useSwapForm = (walletAddress?: string) => {
   const calculateMinReceived = useCallback((amount: string, slippagePercent: number): string => {
     if (!amount || parseFloat(amount) <= 0) return '0';
     const amountNum = parseFloat(amount);
-    // Apply slippage to the amount (which already has Typhoon fee deducted)
+    // Apply slippage to the amount
     const minReceived = amountNum * (1 - slippagePercent / 100);
     return formatTokenAmountDisplay(minReceived, 8);
   }, []);
@@ -286,7 +283,7 @@ export const useSwapForm = (walletAddress?: string) => {
     swapError: swapExecution.error,
     transactionHash: swapExecution.transactionHash,
 
-    // Minimum amount validation for private swaps
+    // Minimum amount validation
     minimumAmountValidation,
 
     // Actions

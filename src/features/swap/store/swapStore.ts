@@ -22,11 +22,6 @@ interface SwapState {
   isExecuting: boolean;
   executionProgress?: SwapProgress;
   
-  // Privacy configuration
-  privacy: {
-    recipientAddress: string;
-    isEnabled: boolean; // Always true by default for private swaps
-  };
   
   // Settings
   settings: {
@@ -54,9 +49,6 @@ interface SwapActions {
   setExecuting: (executing: boolean) => void;
   setExecutionProgress: (progress: SwapProgress | undefined) => void;
   
-  // Privacy actions
-  setRecipientAddress: (address: string) => void;
-  setPrivacyEnabled: (enabled: boolean) => void;
   
   // Utility actions
   swapTokens: () => void;
@@ -83,10 +75,6 @@ const initialState: SwapState = {
   isExecuting: false,
   executionProgress: undefined,
   
-  privacy: {
-    recipientAddress: '',
-    isEnabled: true, // Always enabled for private swaps
-  },
   
   settings: {
     defaultSlippage: 0.5,
@@ -95,27 +83,11 @@ const initialState: SwapState = {
   },
 };
 
-// Clean up any persisted recipient addresses from previous versions
-const cleanupPersistedData = () => {
-  try {
-    const stored = localStorage.getItem('swap-store');
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (parsed?.state?.privacy?.recipientAddress) {
-        parsed.state.privacy.recipientAddress = '';
-        localStorage.setItem('swap-store', JSON.stringify(parsed));
-      }
-    }
-  } catch (error) {
-  }
-};
 
 export const useSwapStore = create<SwapStore>()(
   devtools(
     persist(
       (set, get) => {
-        // Clean up on store initialization
-        cleanupPersistedData();
         
         return {
           ...initialState,
@@ -137,13 +109,6 @@ export const useSwapStore = create<SwapStore>()(
         setExecuting: (executing) => set({ isExecuting: executing }),
         setExecutionProgress: (progress) => set({ executionProgress: progress }),
         
-        // Privacy actions
-        setRecipientAddress: (address) => set((state) => ({
-          privacy: { ...state.privacy, recipientAddress: address }
-        })),
-        setPrivacyEnabled: (enabled) => set((state) => ({
-          privacy: { ...state.privacy, isEnabled: enabled }
-        })),
         
         // Utility actions
         swapTokens: () => {
